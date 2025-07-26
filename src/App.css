@@ -1,0 +1,70 @@
+/* Calendar Header */
+.playfair {
+  font-family: "Playfair Display", serif;
+}
+.react-datepicker__header {
+  background-color: #ff9272;
+  color: white;  /* Ensures header text is visible */
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+/* Month & Year Dropdown Text */
+.react-datepicker__current-month,
+.react-datepicker__year-read-view--selected-year,
+.react-datepicker__month-read-view--selected-month {
+  color: black !important;  /* Ensures month & year text is visible */
+  font-weight: bold;
+}
+
+/* Selected Date */
+.react-datepicker__day--selected {
+  background-color: #ff6b3d !important;
+  color: white !important;  /* Fix text color to be visible */
+  border-radius: 8px;
+}
+
+/* Hover Effect */
+.react-datepicker__day:hover {
+  background-color: rgb(245, 214, 158);
+  color: #ff6b3d !important;  /* Ensures hover text is visible */
+  border-radius: 8px;
+}
+
+/* Month & Year Dropdown Hover */
+.react-datepicker__navigation:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+}
+
+/* Ensure Month & Year Dropdown Items Are Visible */
+.react-datepicker__month-dropdown,
+.react-datepicker__year-dropdown {
+  background-color: white !important;
+  color: black !important;
+  border: 1px solid #ff9272;
+}
+
+/* Month & Year Items */
+.react-datepicker__month-option,
+.react-datepicker__year-option {
+  color: black !important;
+}
+
+/* Month & Year Items Hover */
+.react-datepicker__month-option:hover,
+.react-datepicker__year-option:hover {
+  background-color: #ff9272 !important;
+  color: white !important;
+}
+
+.glow-border {
+  padding: 2px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #ff6ec4, #7873f5, #4adede);
+}
+
+.glow-border-inner {
+  border-radius: 9999px;
+  background-color: white; /* or gray-100 */
+}
