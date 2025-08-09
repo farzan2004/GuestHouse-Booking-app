@@ -23,5 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 
+=======
+# Ignore env files
 .env
 backend/.env
+>>>>>>> 18a2036 (Force remove git-filter-repo embedded repo)
