@@ -1,7 +1,8 @@
 import express from "express"
 import { AddRoomsByRange, BookingStatus, listBookedRoomsWithGuests, listRoomTypes, loginAdmin, listBookingRequests, getSingleGuest,
-  deleteGuest, AddRoomType } from "../controller/adminController.js"
+  deleteGuest, AddRoomType, submitComplaint, getAllComplaints } from "../controller/adminController.js"
 import authAdmin from "../middleware/authAdmin.js"
+import verifyGuestOrFirebaseToken from "../middleware/verifyGuestOrFirebaseToken.js"
 import upload from "../middleware/multer.js"
 
 const adminRouter = express.Router()
@@ -15,5 +16,7 @@ adminRouter.get('/listRoomTypes',authAdmin, listRoomTypes)
 adminRouter.get('/bookingRequests', authAdmin, listBookingRequests);
 adminRouter.get('/guests/:id', authAdmin, getSingleGuest);
 adminRouter.delete('/guests/:id', authAdmin, deleteGuest);
+adminRouter.post('/complaints', verifyGuestOrFirebaseToken, submitComplaint);
+adminRouter.get("/complaints", authAdmin, getAllComplaints);
 
 export default adminRouter

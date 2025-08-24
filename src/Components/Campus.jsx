@@ -1,6 +1,7 @@
 import { useState, useEffect, Fragment } from "react";
 import stringSimilarity from "string-similarity";
 import { useJsApiLoader } from "@react-google-maps/api";
+import CampusSkeleton from "../Skeletons/campusmapSkeleton";
 import {
   GoogleMap,
   LoadScript,
@@ -337,7 +338,7 @@ ${places.map((p) => `"${p.name}"`).join(", ")}
       setIsLoading(false);
     }
   };
-  if (!isLoaded) return <div className="text-center mt-12">Loading Map...</div>;
+  if (!isLoaded) return <CampusSkeleton/>;
   return (
     <div className="min-h-screen px-4 py-6 bg-custom-color bg-[radial-gradient(circle_at_60%_40%,#fce8d5_0%,#fef2e3_50%,#fff8ef_100%)]">
       <div className="max-w-5xl mx-auto flex flex-col items-center space-y-3 mt-12">

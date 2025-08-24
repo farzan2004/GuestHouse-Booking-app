@@ -3,11 +3,61 @@ import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import roomModel from '../models/roomsSchema.js';
 import bookingModel from '../models/bookingSchema.js';
-import userModel from "../models/userModel.js"; 
+import userModel from "../models/userModel.js";
 import { v2 as cloudinary } from "cloudinary";
 import streamifier from "streamifier";
 import Admin from '../models/adminModel.js';
 import roomTypeModel from '../models/roomTypeModel.js';
+import ComplaintModel from '../models/ComplaintModel.js';
+import nodemailer from 'nodemailer';
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS
+  }
+});
+
+export const autoUpdateRoomStatus = async () => {
+  try {
+    const now = new Date();
+
+    // Find bookings where checkout date is in the past and status is Approved
+    const expiredBookings = await bookingModel.find({
+      status: 'Approved',
+      checkOutDate: { $lt: now }
+    });
+
+    const updatedRooms = new Set();
+
+    for (const booking of expiredBookings) {
+      const room = await roomModel.findById(booking.room);
+
+      if (room && room.status === 'Booked') {
+        // Check if there's another future booking for this room
+        const futureBookingExists = await bookingModel.findOne({
+          room: room._id,
+          status: 'Approved',
+          checkOutDate: { $gt: now }
+        });
+
+        if (!futureBookingExists) {
+          room.status = 'Available';
+          await room.save();
+          updatedRooms.add(room.roomNumber);
+        }
+      }
+    }
+
+    if (updatedRooms.size > 0) {
+      console.log("Room statuses auto-updated:", [...updatedRooms]);
+    }
+  } catch (err) {
+    console.error("Error in autoUpdateRoomStatus:", err);
+  }
+};
+
 
 const loginAdmin = async (req, res) => {
   try {
@@ -145,16 +195,24 @@ export const AddRoomType = async (req, res) => {
 const BookingStatus = async (req, res) => {
   try {
     const bookingId = req.params.id;
-    const status = req.body.status.charAt(0).toUpperCase() + req.body.status.slice(1).toLowerCase();// 'Approved' or 'Rejected'
+    const status =
+      req.body.status.charAt(0).toUpperCase() +
+      req.body.status.slice(1).toLowerCase(); // 'Approved' or 'Rejected'
 
     if (!['Approved', 'Rejected'].includes(status)) {
       return res.status(400).json({ error: 'Invalid status value' });
     }
 
-    const booking = await bookingModel.findById(bookingId);
+    // Find booking + user info
+    const booking = await bookingModel
+      .findById(bookingId)
+      .populate("user", "email fullName");
     if (!booking) {
       return res.status(404).json({ error: 'Booking not found' });
     }
+
+    const userEmail = booking.user?.email;
+    const userName = booking.user?.fullName || "Guest";
 
     const room = await roomModel.findById(booking.room);
     if (!room) {
@@ -162,21 +220,13 @@ const BookingStatus = async (req, res) => {
     }
 
     if (status === 'Approved') {
-      if (room.status !== 'Available') {
-        return res.status(400).json({ error: 'Room is not available' });
-      }
-
       // Check for overlapping approved bookings
       const overlappingBooking = await bookingModel.findOne({
         room: booking.room,
         status: 'Approved',
         _id: { $ne: bookingId },
-        $or: [
-          {
-            checkInDate: { $lt: booking.checkOutDate },
-            checkOutDate: { $gt: booking.checkInDate }
-          }
-        ]
+        checkInDate: { $lt: booking.checkOutDate },
+        checkOutDate: { $gt: booking.checkInDate }
       });
 
       if (overlappingBooking) {
@@ -187,22 +237,31 @@ const BookingStatus = async (req, res) => {
       booking.status = 'Approved';
       await booking.save();
 
-      // Set room to booked
-      room.status = 'Booked';
-      await room.save();
+      // Send approval email
+      if (userEmail) {
+        const mailOptions = {
+          from: process.env.MAIL_USER,
+          to: userEmail,
+          subject: 'Booking Confirmed - Guest House',
+          html: ` 
+            <h3>Hello ${userName},</h3>
+            <p>Your booking has been <strong>approved</strong>.</p>
+            <p><strong>Room:</strong> ${room.roomNumber} (${room.type})</p>
+            <p><strong>Check-In:</strong> ${new Date(booking.checkInDate).toDateString()}</p>
+            <p><strong>Check-Out:</strong> ${new Date(booking.checkOutDate).toDateString()}</p>
+            <p>Thank you for choosing us!</p>`
+        };
+        await transporter.sendMail(mailOptions);
+      }
 
-      // OPTIONAL: Auto-reject overlapping pending bookings
+      // Auto-reject overlapping pending bookings
       await bookingModel.updateMany(
         {
           room: booking.room,
           status: 'Pending',
           _id: { $ne: bookingId },
-          $or: [
-            {
-              checkInDate: { $lt: booking.checkOutDate },
-              checkOutDate: { $gt: booking.checkInDate }
-            }
-          ]
+          checkInDate: { $lt: booking.checkOutDate },
+          checkOutDate: { $gt: booking.checkInDate }
         },
         { $set: { status: 'Rejected' } }
       );
@@ -211,15 +270,22 @@ const BookingStatus = async (req, res) => {
       booking.status = 'Rejected';
       await booking.save();
 
-      // Optional: Set room to Available if no other approved booking exists
-      const otherApproved = await bookingModel.findOne({
-        room: booking.room,
-        status: 'Approved'
-      });
-
-      if (!otherApproved) {
-        room.status = 'Available';
-        await room.save();
+      // Send rejection email
+      if (userEmail) {
+        const mailOptions = {
+          from: process.env.MAIL_USER,
+          to: userEmail,
+          subject: 'Booking Rejected - Guest House',
+          html: ` 
+            <h3>Hello ${userName},</h3>
+            <p>We regret to inform you that your booking request has been <strong>rejected</strong>.</p>
+            <p><strong>Room Type:</strong> ${room.type}</p>
+            <p><strong>Check-In:</strong> ${new Date(booking.checkInDate).toDateString()}</p>
+            <p><strong>Check-Out:</strong> ${new Date(booking.checkOutDate).toDateString()}</p>
+            <p>If you believe this was a mistake or wish to book again, please contact the Guest House admin.</p>
+            <p>Thank you for understanding.</p>`
+        };
+        await transporter.sendMail(mailOptions);
       }
     }
 
@@ -232,12 +298,16 @@ const BookingStatus = async (req, res) => {
 };
 
 
+
 // list guests
 
 const listBookedRoomsWithGuests = async (req, res) => {
   try {
-    const bookings = await bookingModel.find({ status: 'Approved' }).populate('room');
-
+    const now = new Date();
+    const bookings = await bookingModel.find({
+      status: 'Approved',
+      checkOutDate: { $gte: now }
+    }).populate('room');
     const mainGuests = [];
 
     bookings.forEach((booking) => {
@@ -272,12 +342,15 @@ const listBookedRoomsWithGuests = async (req, res) => {
 
 const listRoomTypes = async (req, res) => {
   try {
-    const rooms = await roomModel.find();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const rooms = await roomModel.find().populate('bookings'); // assuming bookings is an array of booking refs
 
     const summary = {};
 
     rooms.forEach(room => {
-      const { type, status, price } = room;
+      const { type, price, bookings } = room;
 
       if (!summary[type]) {
         summary[type] = {
@@ -291,12 +364,21 @@ const listRoomTypes = async (req, res) => {
 
       summary[type].total += 1;
 
-      if (status === 'Available') summary[type].available += 1;
-      if (status === 'Booked') summary[type].booked += 1;
+      // Check if room is booked today
+      const isBookedToday = bookings.some(b => {
+        const checkIn = new Date(b.checkInDate);
+        const checkOut = new Date(b.checkOutDate);
+        return today >= checkIn && today <= checkOut;
+      });
+
+      if (isBookedToday) {
+        summary[type].booked += 1;
+      } else {
+        summary[type].available += 1;
+      }
     });
 
-    const result = Object.values(summary);
-    res.json(result);
+    res.json(Object.values(summary));
 
   } catch (err) {
     console.error(err);
@@ -312,21 +394,22 @@ const listBookingRequests = async (req, res) => {
       .sort({ createdAt: -1 });
 
     const simplified = requests
-  .filter(req => req.guests && req.guests.length > 0)
-  .map(req => {
-    const mainGuest = req.guests.find(g => g.relation === "Self") || req.guests[0];
-    const name = mainGuest.fullName || mainGuest.name || "Unknown Guest";
-    
-    return {
-      _id: req._id,
-      user_name: name,
-      guests: req.guests,
-      room_type: req.room?.type || "N/A",
-      category: req.category,
-      requested_date: `${req.checkInDate.toISOString().split("T")[0]} to ${req.checkOutDate.toISOString().split("T")[0]}`,
-      status: req.status,
-    };
-  });
+      .filter(req => req.guests && req.guests.length > 0)
+      .map(req => {
+        const mainGuest = req.guests.find(g => g.relation === "Self") || req.guests[0];
+        const name = mainGuest.fullName || mainGuest.name || "Unknown Guest";
+
+        return {
+          _id: req._id,
+          user_name: name,
+          guests: req.guests,
+          room_type: req.room?.type || "N/A",
+          category: req.category,
+          requested_date: `${req.checkInDate.toISOString().split("T")[0]} to ${req.checkOutDate.toISOString().split("T")[0]}`,
+          status: req.status,
+          createdAt: req.createdAt,
+        };
+      });
 
     res.status(200).json(simplified);
   } catch (err) {
@@ -366,12 +449,6 @@ export const deleteGuest = async (req, res) => {
       // Delete entire booking and free the room
       await bookingModel.deleteOne({ _id: booking._id });
 
-      const room = await roomModel.findById(booking.room);
-      if (room) {
-        room.status = 'Available';
-        await room.save();
-      }
-
       return res.status(200).json({ message: "Main guest deleted; booking and all guests removed" });
     } else {
       // Just remove this guest
@@ -386,8 +463,46 @@ export const deleteGuest = async (req, res) => {
   }
 };
 
+export const submitComplaint = async (req, res) => {
+  try {
+    const { subject, message } = req.body;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized. No user ID." });
+    }
+    if (!subject || !message) {
+      return res.status(400).json({ success: false, message: "All fields are required." });
+    }
+
+    const newComplaint = new ComplaintModel({
+      subject,
+      message,
+      submittedBy: userId
+    });
+
+    await newComplaint.save();
+
+    res.status(201).json({ success: true, message: "Complaint submitted successfully." });
+
+  } catch (err) {
+    console.error("Complaint submission error:", err);
+    res.status(500).json({ success: false, message: "Server error." });
+  }
+};
+
+export const getAllComplaints = async (req, res) => {
+  try {
+    const complaints = await ComplaintModel.find()
+      .populate("submittedBy", "name email")
+      .sort({ createdAt: -1 });
+    res.status(200).json({ success: true, complaints });
+  } catch (err) {
+    console.error("Fetch complaints error:", err);
+    res.status(500).json({ success: false, message: "Server error." });
+  }
+};
 
 
 
 
-export {loginAdmin,AddRoomsByRange , BookingStatus , listRoomTypes , listBookedRoomsWithGuests, listBookingRequests}
+export { loginAdmin, AddRoomsByRange, BookingStatus, listRoomTypes, listBookedRoomsWithGuests, listBookingRequests }

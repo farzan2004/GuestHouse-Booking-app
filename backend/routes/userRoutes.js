@@ -1,11 +1,13 @@
 import express from "express"
-import { cancelBooking, createBooking, checkAvailableRoom, getProfileData, listBookings, loginUser, registerUser, updateProfileData, getRoomTypes, googleLogin, getRoomById, getUserBookings } from "../controller/userController.js"
+import { cancelBooking, createBooking, checkAvailableRoom, getProfileData, listBookings, loginUser, registerUser, updateProfileData, getRoomTypes, googleLogin, getRoomById, getUserBookings, sendOtp, resetPassword } from "../controller/userController.js"
 import authUser from "../middleware/authUser.js"
 
 const userRouter = express.Router()
 
 userRouter.post('/register',registerUser)
 userRouter.post('/login',loginUser)
+userRouter.post('/forgot-password', sendOtp); // send OTP
+userRouter.post('/reset-password', resetPassword); 
 userRouter.get('/getProfileData',authUser,getProfileData)
 userRouter.get("/rooms", getRoomTypes)
 userRouter.get("/room/:id", getRoomById);

@@ -12,7 +12,10 @@ const roomTypeSchema = new mongoose.Schema({
     required: true
   },
   description: String,
-  images: [String]
+  images: [String],
+  bookings: [
+    { type: mongoose.Schema.Types.ObjectId, ref: "booking" }
+  ]
 }, {
   timestamps: true
 });

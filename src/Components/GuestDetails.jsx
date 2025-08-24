@@ -71,6 +71,7 @@ const GuestDetails = ({ id, onBack }) => {
                         <tbody>
                             <tr><td className="p-2 font-semibold">Full Name</td><td className="p-2">{guest.fullName}</td></tr>
                             <tr><td className="p-2 font-semibold">Contact</td><td className="p-2">{guest.contact}</td></tr>
+                            <tr><td className="p-2 font-semibold">Room Number</td><td className="p-2">{guest.room || "N/A"}</td></tr>
                             <tr><td className="p-2 font-semibold">Check-in Date</td><td className="p-2">{guest.checkInDate?.slice(0, 10) || "N/A"}</td></tr>
                             <tr><td className="p-2 font-semibold">Check-out Date</td><td className="p-2">{guest.checkOutDate?.slice(0, 10) || "N/A"}</td></tr>
                             <tr><td className="p-2 font-semibold">Gender</td><td className="p-2">{guest.gender}</td></tr>

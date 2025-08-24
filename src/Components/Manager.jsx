@@ -1,19 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import ManagerSkeleton from '../Skeletons/managerSkeleton';
 
 
 const Manager = () => {
-  // const rooms = [
-  //   { id: 1, image: '/Guest-1.jpg', price: '3100', title: 'Deluxe Room', description: 'A comfortable deluxe room with modern amenities.' },
-  //   { id: 2, image: '/guest-3.jpg', price: '2400', title: 'Executive Suite', description: 'Spacious suite with a great view and luxury features.' },
-  //   { id: 3, image: '/guest_hall.jpeg', price: '1300', title: 'Luxury Room', description: 'Cozy room with essential facilities for a pleasant stay.' },
-  //   { id: 4, image: '/guest-new-2.jpg', price: '900', title: 'Family Suite', description: 'Perfect for families, offering extra space and comfort.' },
-  //   { id: 5, image: '', price: '500', title: 'Standard Room', description: 'Premium luxury room with all high-end features.' }
-  // ];
 
   const [rooms, setRooms] = useState([]);
-
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,6 +15,7 @@ const Manager = () => {
     try {
       const res = await axios.get("http://localhost:5000/api/user/rooms");
       if (res.data.success) {
+        setLoading(false);
         setRooms(res.data.rooms);
       } else {
         console.error("Error:", res.data.message);
@@ -51,13 +46,17 @@ const Manager = () => {
       setStartIndex(startIndex - 1);
     }
   };
-
+  if(loading){
+    return(
+      <ManagerSkeleton/>
+    )
+  }
   return (
     <div className='relative pt-[65px]'>
       <div className='flex justify-center absolute inset-0 -z-10 min-h-screen w-full bg-custom-color bg-[radial-gradient(circle_at_top_left,#fff8ef_20%,#fce8d5_50%,#fef2e3_90%)]' style={{ pointerEvents: "none", zIndex: -1 }}></div>
-      <img src='/background_img.jpg' alt='BIT Guest_House' className='w-[calc(100%-70px)] mx-auto md:h-[90vh] h-auto  object-cover filter md:blur-[3px] blur-[1px]' />
+      <img src='/background_img.jpg' alt='BIT Guest_House' className='w-[calc(100%-70px)] mx-auto md:h-[75vh] h-auto  object-cover filter md:blur-[2px] blur-[1px]' />
       <span
-        className='absolute md:top-[22rem] top-40 left-1/2 transform -translate-x-1/2 text-center md:text-7xl text-3xl md:font-extrabold font-bold tracking-wider'
+        className='absolute md:top-[16rem] top-32 left-1/2 transform -translate-x-1/2 text-center md:text-7xl text-3xl md:font-extrabold font-bold tracking-wider'
         style={{
           color: '#fff8dc',
           fontFamily: 'monospace',

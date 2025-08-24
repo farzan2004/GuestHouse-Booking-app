@@ -7,6 +7,8 @@ import adminRouter from "./routes/adminRoutes.js"
 import userRouter from "./routes/userRoutes.js"
 import chatRouter from "./routes/chatRoutes.js"
 import path from 'path';
+import cron from "node-cron";
+import { autoUpdateRoomStatus } from "./controller/adminController.js";
 
 const app = express()
 app.use(express.json());
@@ -36,6 +38,10 @@ app.use('/api/chat', chatRouter);
 app.get('/',(req,res)=>{
     res.send("API working")
 })
+cron.schedule("5 0 * * *", async () => {
+  console.log("⏰ Nightly cleanup started...");
+  await autoUpdateRoomStatus();
+});
 app.listen(port, '0.0.0.0', () => {
   console.log(`server connected at http://localhost:${port}`);
 });

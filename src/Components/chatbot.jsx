@@ -18,6 +18,13 @@ const Chatbot = () => {
   const [loading, setLoading] = useState(false);
   const [lastBookings, setLastBookings] = useState([]);
   const chatBoxRef = useRef(null);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     if (chatBoxRef.current) {
@@ -88,12 +95,12 @@ const Chatbot = () => {
         setLastBookings(res.data.bookings);
         botReply.text = res.data.bookings?.length
           ? "Your bookings:\n" +
-            res.data.bookings
-              .map(
-                (b, i) =>
-                  `${i + 1}. ${b.room?.type || b.room_type} | ${b.checkInDate?.slice(0, 10)} → ${b.checkOutDate?.slice(0, 10)} | ${b.status}`
-              )
-              .join("\n")
+          res.data.bookings
+            .map(
+              (b, i) =>
+                `${i + 1}. ${b.room?.type || b.room_type} | ${b.checkInDate?.slice(0, 10)} → ${b.checkOutDate?.slice(0, 10)} | ${b.status}`
+            )
+            .join("\n")
           : "No bookings found";
         setMessages((prev) => [...prev, botReply]);
       }
@@ -186,60 +193,60 @@ const Chatbot = () => {
     <>
       {/* Floating Button */}
       <button
-    onClick={toggleChat}
-    style={{
-      position: "fixed",
-      bottom: 20,
-      right: 20,
-      width: 50,
-      height: 50,
-      borderRadius: "50%",
-      backgroundColor: "#537afa",
-      color: "white",
-      border: "none",
-      cursor: "pointer",
-      zIndex: 1000,
-      boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-      fontSize: "1.5rem",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-    }}
-    aria-label={isOpen ? "Close chat" : "Open chat"}
-    title={isOpen ? "Close chat" : "Open chat"}
-  >
-    💬
-  </button>
+        onClick={toggleChat}
+        style={{
+          position: "fixed",
+          bottom: 20,
+          right: 20,
+          width: 50,
+          height: 50,
+          borderRadius: "50%",
+          backgroundColor: "#537afa",
+          color: "white",
+          border: "none",
+          cursor: "pointer",
+          zIndex: 1000,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+          fontSize: "1.5rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+        aria-label={isOpen ? "Close chat" : "Open chat"}
+        title={isOpen ? "Close chat" : "Open chat"}
+      >
+        💬
+      </button>
       {!isOpen && (
-    <div
-      style={{
-        position: "fixed",
-        bottom: 30,
-        right: 85,
-        background: "#fff",
-        color: "#333",
-        padding: "10px 18px",
-        borderRadius: 20,
-        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-        border: "1px solid #eee",
-        fontSize: "0.85rem",
-        fontWeight: 500,
-        zIndex: 1001,
-        whiteSpace: "nowrap",
-      }}
-    >
-      Need help?
-    </div>
-  )}
+        <div
+          style={{
+            position: "fixed",
+            bottom: 30,
+            right: 85,
+            background: "#fff",
+            color: "#333",
+            padding: "10px 18px",
+            borderRadius: 20,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            border: "1px solid #eee",
+            fontSize: "0.85rem",
+            fontWeight: 500,
+            zIndex: 1001,
+            whiteSpace: "nowrap",
+          }}
+        >
+          Need help?
+        </div>
+      )}
 
       {/* Chat Box */}
 
       {isOpen && (
         <div style={{
           position: "fixed",
-          bottom: 90,
+          bottom: 75,
           right: 20,
-          width: 400,
+          width: windowWidth > 410 ? 400 : 300, 
           height: 600,
           maxHeight: "80vh",
           borderRadius: 18,

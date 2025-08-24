@@ -1,3 +1,6 @@
+import animate from 'tailwindcss-animate';
+// Make sure the module name starts with '@'
+import lineClamp from '@tailwindcss/line-clamp'; 
 /** @type {import('tailwindcss').Config} */
 export default {
     darkMode: ["class"],
@@ -22,6 +25,6 @@ export default {
       },
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [animate, lineClamp]
 }
 

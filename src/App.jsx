@@ -14,12 +14,13 @@ import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './ProtectedRoute';
 import AddRoomTypeForm from "./components/AddRoomTypeForm";
 import Chatbot from './Components/chatbot';
+import ForgotPassword from './Components/ForgotPassword';
 
 // const GOOGLE_MAPS_API_KEY = "AIzaSyB6Z9F2vwV9ioiANgiu6MpF5EFLkWhNZbQ";
 
 const AppLayout = () => {
     const location = useLocation();
-    const hideNavbarFooter = ["/login", "/admin", "/admin/addroomtype"].includes(location.pathname); // Check if we are on the login page
+    const hideNavbarFooter = ["/login", "/admin", "/forgot-password", "/admin/addroomtype"].includes(location.pathname); // Check if we are on the login page
 
     return (
         <>
@@ -33,6 +34,7 @@ const AppLayout = () => {
                 <Route path="/bus-service" element={<BusService/>} />
 
                 <Route path="/login" element={<Login />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route
                     path="/profile"
                     element={

@@ -7,36 +7,21 @@ import { toast, ToastContainer, Slide } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
-import { getAuth, signOut } from "firebase/auth";
+// import { getAuth, signOut } from "firebase/auth";
+import ProfileSkeleton from "../Skeletons/profileSkeleton";
 
 export default function Profile() {
-    // Dummy user data for frontend testing
-    // const dummyUserData = {
-    //     firstName: "John",
-    //     lastName: "Doe",
-    //     dob: "1995-06-15",
-    //     gender: "Male",
-    //     id: "",
-    //     address: "123 Street Name",
-    //     city: "New York",
-    //     state: "NY",
-    //     pinCode: "10001",
-    //     email: "testuser@example.com",
-    //     mobile: "9876543210",
-    //     bookings: [
-    //         { _id: "req_1", user_name: "John Doe", category: "Deluxe", requested_date: "26.03.2025", status: "approved" },
-    //         { _id: "req_2", user_name: "John Doe", category: "Standard", requested_date: "26.03.2025", status: "approved" },
-    //         { _id: "req_3", user_name: "John Doe", category: "Deluxe", requested_date: "25.03.2025", status: "rejected" },
-    //         { _id: "req_4", user_name: "John Doe", category: "Standard", requested_date: "27.03.2025", status: "pending" },
-    //     ],
-    //     infoupdate: "true"
-    // };
-
     const token = localStorage.getItem("guestToken");
     const [bookings, setBookings] = useState([]);
     // const userData = dummyUserData;
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const { logout } = useAuth();
+    const handleLogout = async () => {
+        await logout(); // Call the single, powerful logout function
+        toast.success("Logged Out Successfully");
+        navigate("/login");
+    };
 
     const [formData, setFormData] = useState({
         firstName: "",
@@ -56,9 +41,10 @@ export default function Profile() {
     const [selectedSection, setSelectedSection] = useState(location.state?.section || "accountInfo");
     const [isEditing, setIsEditing] = useState(true);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
-    const auth = getAuth();
-    const { currentUser } = useAuth();
+    const { currentUser, token: firebaseToken } = useAuth();
     const navigate = useNavigate();
+    const [subject, setSubject] = useState("");
+    const [message, setMessage] = useState("");
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -163,6 +149,35 @@ export default function Profile() {
             alert("Something went wrong");
         }
     };
+    const handleInputSubmit = async (e) => {
+        e.preventDefault();
+
+        try {
+            const tokenToSend = token || firebaseToken;
+
+            if (!subject.trim() || !message.trim()) {
+                toast.error("Please fill in both subject and message.");
+                return;
+            }
+
+            const res = await axios.post(
+                "http://localhost:5000/api/admin/complaints",
+                { subject: subject.trim(), message: message.trim() },
+                { headers: { Authorization: `Bearer ${tokenToSend}` } }
+            );
+
+            if (res.data.success) {
+                toast.success("Feedback submitted!");
+                setSubject(""); // clear form
+                setMessage("");
+            } else {
+                toast.error(res.data.message || "Submission failed.");
+            }
+        } catch (err) {
+            console.error("Submission error:", err);
+            toast.error("Something went wrong.");
+        }
+    };
     const fetchUserBookings = async () => {
         try {
             const res = await axios.get("http://localhost:5000/api/user/user/bookings", {
@@ -180,9 +195,7 @@ export default function Profile() {
 
     if (loading) {
         return (
-            <div className="pt-[65px] flex justify-center items-center h-screen text-xl font-semibold">
-                Loading...
-            </div>
+            <ProfileSkeleton />
         );
     }
     return (
@@ -214,7 +227,7 @@ export default function Profile() {
                             }`}
                         onClick={() => setSelectedSection("helpCenter")}
                     >
-                        Help Center
+                        Feedback
                         <span className="absolute left-0 bottom-0 w-0 h-[2px] bg-gray-900 transition-all duration-300 group-hover:w-full"></span>
                     </li>
                     <li
@@ -439,45 +452,108 @@ export default function Profile() {
                 )}
 
                 {selectedSection === "bookings" && (
-                    <div className="bg-slate-200 p-6 shadow-lg rounded-lg w-full">
-                        {/* Table Header */}
-                        <div className="grid grid-cols-4 text-gray-700 text-lg md:font-medium mdl:font-normal font-light py-2 border-b border-gray-400">
-                            <span className="px-2">Room Type</span>
-                            <span className="px-1">CheckIn Date</span>
-                            <span className="px-1">CheckOut Date</span>
-                            <span className="px-2">Status</span>
-                        </div>
-
-                        {/* Table Data */}
-                        {bookings.map((booking) => (
-                            <div
-                                key={booking._id}
-                                className="grid grid-cols-4 py-1 border-b border-gray-300 md:font-normal mdl:font-light font-extralight text-gray-800"
-                            >
-                                <span>{booking.room_type}</span>
-                                <span>{new Date(booking.checkInDate).toLocaleDateString("en-GB")}</span>
-                                <span>{new Date(booking.checkOutDate).toLocaleDateString("en-GB")}</span>
-                                <span
-                                    className={`px-3 py-1 font-semibold rounded-lg text-base ${booking.status === "Approved"
-                                        ? "text-green-600"
-                                        : booking.status === "Pending"
-                                            ? "text-yellow-600"
-                                            : "text-red-500"
-                                        }`}
-                                >
-                                    {booking.status}
-                                </span>
+                    <>
+                        {/* Table Wrapper */}
+                        <div className="bg-slate-200 p-2 md:p-4 shadow-lg rounded-lg w-full">
+                            {/* HEADER: Only visible on medium screens and up (mdl) */}
+                            <div className="hidden mdl:grid grid-cols-4 gap-4 text-gray-700 font-medium py-2 border-b border-gray-400">
+                                <span className="px-1">Room Type</span>
+                                <span className="px-1">Check-In Date</span>
+                                <span className="px-1">Check-Out Date</span>
+                                <span className="px-1">Status</span>
                             </div>
-                        ))}
-                    </div>
+
+                            {/* Table Data: Maps over your bookings */}
+                            <div>
+                                {bookings.map((booking) => (
+                                    <div
+                                        key={booking._id}
+                                        className="border-b border-gray-300 p-3 text-sm mdl:grid mdl:grid-cols-4 mdl:gap-4 mdl:items-center mdl:p-2 mdl:border-b"
+                                    >
+                                        {/* Column 1: Room Type */}
+                                        <div className="flex justify-between items-center mdl:block">
+                                            <span className="font-medium text-gray-500 mdl:hidden">Room</span>
+                                            <span className="font-semibold text-gray-800">{booking.room_type}</span>
+                                        </div>
+
+                                        {/* Column 2: Check-In Date */}
+                                        <div className="flex justify-between items-center mt-1 mdl:mt-0 mdl:block">
+                                            <span className="font-medium text-gray-500 mdl:hidden">Check-In</span>
+                                            <span>{new Date(booking.checkInDate).toLocaleDateString("en-GB")}</span>
+                                        </div>
+
+                                        {/* Column 3: Check-Out Date */}
+                                        <div className="flex justify-between items-center mt-1 mdl:mt-0 mdl:block">
+                                            <span className="font-medium text-gray-500 mdl:hidden">Check-Out</span>
+                                            <span>{new Date(booking.checkOutDate).toLocaleDateString("en-GB")}</span>
+                                        </div>
+
+                                        {/* Column 4: Status */}
+                                        <div className="flex justify-between items-center mt-2 mdl:mt-0 mdl:block">
+                                            <span className="font-medium text-gray-500 mdl:hidden">Status</span>
+                                            <span
+                                                className={`px-3 py-1 font-semibold rounded-lg text-xs ${booking.status === "Approved"
+                                                    ? "text-green-700 bg-green-100"
+                                                    : booking.status === "Pending"
+                                                        ? "text-yellow-700 bg-yellow-100"
+                                                        : "text-red-700 bg-red-100"
+                                                    }`}
+                                            >
+                                                {booking.status}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </>
                 )}
 
 
 
                 {selectedSection === "helpCenter" && (
-                    <div className="bg-slate-200 p-6 shadow-lg rounded-lg w-full">
-                        <h1 className="text-2xl font-bold mb-4">Help Center</h1>
-                        <p>Need assistance? Contact our support team.</p>
+                    <div className="flex flex-col items-center justify-end bg-slate-200 p-4 shadow-lg rounded-lg w-full mb-2">
+                        <h2 className="text-2xl font-semibold text-gray-800 mb-2">Help Us Improve</h2>
+                        <p className="text-sm text-gray-600 mb-2">
+                            Have a complaint, suggestion, or feedback? Let us know — we’re here to help!
+                        </p>
+                    </div>
+                )}
+
+                {selectedSection === "helpCenter" && (
+                    <div className="bg-slate-200 p-4 md:p-6 shadow-xl rounded-2xl w-full mx-auto mt-2">
+                        <form className="space-y-4 " onSubmit={handleInputSubmit}>
+                            <div>
+                                <label htmlFor="subject" className="block text-sm font-medium text-gray-700">Subject</label>
+                                <input
+                                    type="text"
+                                    id="subject"
+                                    value={subject}
+                                    onChange={(e) => setSubject(e.target.value)}
+                                    placeholder="Short title or concern"
+                                    className="mt-1 block w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="message" className="block text-sm font-medium text-gray-700">Message</label>
+                                <textarea
+                                    id="message"
+                                    rows="5"
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
+                                    placeholder="Describe your issue or feedback in detail...Provide your room number too if you are a guest."
+                                    className="mt-1 block w-full border border-gray-300 rounded-lg p-2 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                ></textarea>
+                            </div>
+
+                            <button
+                                type="submit"
+                                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200"
+                            >
+                                Submit Feedback
+                            </button>
+                        </form>
                     </div>
                 )}
 
@@ -496,22 +572,7 @@ export default function Profile() {
                                     Cancel
                                 </button>
                                 <button
-                                    onClick={() => {
-                                        if(token){
-                                            localStorage.removeItem("guestToken")
-                                            console.log("JWT user logged out");
-                                            toast.success("Logged Out Successfully")
-                                            navigate("/home"); 
-                                        }
-                                        else{
-                                            signOut(auth)
-                                            .then(() => {
-                                                console.log("User signed out");
-                                                navigate("/home"); // redirect if needed
-                                            })
-                                            .catch((err) => console.error("Sign-out failed:", err));
-                                        }  
-                                    }}
+                                    onClick={handleLogout}
                                     className="px-4 mx-2 py-2 bg-red-600 text-white rounded transition-transform duration-200 hover:bg-red-700 hover:scale-105"
                                 >
                                     Yes, Logout
@@ -523,18 +584,18 @@ export default function Profile() {
 
             </div>
             <ToastContainer
-                            position="top-right"
-                            autoClose={3500}
-                            hideProgressBar={false}
-                            newestOnTop={true}
-                            closeOnClick
-                            rtl={false}
-                            pauseOnFocusLoss
-                            draggable
-                            pauseOnHover
-                            theme="light"
-                            transition={Slide}
-                        />
-        </div>
+                position="top-right"
+                autoClose={3500}
+                hideProgressBar={false}
+                newestOnTop={true}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="light"
+                transition={Slide}
+            />
+        </div >
     );
 }

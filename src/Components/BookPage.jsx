@@ -5,6 +5,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { ToastContainer, toast, Slide } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import axios from "axios";
+import BookPageSkeleton from '../Skeletons/bookpageSkeleton';
 
 
 const BookPage = () => {
@@ -27,10 +28,13 @@ const BookPage = () => {
     const [showSidebar, setShowSidebar] = useState(false);
     const [category, setCategory] = useState("");
     const [extraGuests, setExtraGuests] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [bookloading, setBookloading] = useState(false);
     useEffect(() => {
         const fetchRoom = async () => {
             try {
                 const res = await axios.get(`http://localhost:5000/api/user/room/${id}`);
+                setLoading(false);
                 setRoom(res.data);
             } catch (err) {
                 console.error("Room fetch error:", err);
@@ -119,6 +123,7 @@ const BookPage = () => {
         setExtraGuests(updatedGuests);
     };
 
+    if (loading) return <BookPageSkeleton />;
     if (!room) return <div className="text-center mt-10 text-gray-600">Loading room details...</div>;
 
     return (
@@ -245,7 +250,7 @@ const BookPage = () => {
                                 </button>
 
                                 {showDropdown && (
-                                    <div className="absolute left-0 mt-2 w-full bg-white border shadow-md rounded-md md:p-3 p-2 z-10">
+                                    <div className={`w-full bg-white border shadow-md rounded-md z-10 p-2 md:p-3 ${showDropdown ? "block" : "hidden"} md:absolute md:left-0 md:mb-2 md:mt-0 mt-2`}>
                                         {/* Guests */}
                                         <div className="flex justify-between items-center py-2 border-b">
                                             <span className="text-gray-600">Guests</span>
@@ -309,7 +314,7 @@ const BookPage = () => {
 
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-lg font-semibold">Guest Info & Category</h2>
-                            <button onClick={() => setShowSidebar(false)} className="transition-transform duration-300 ease-in-out hover:scale-125">❌</button>
+                            <button onClick={() => { window.location.reload(); setShowSidebar(false) }} className="transition-transform duration-300 ease-in-out hover:scale-125">❌</button>
                         </div>
 
                         {/* Category Dropdown */}
@@ -407,6 +412,7 @@ const BookPage = () => {
                                         return;
                                     }
                                 }
+                                setBookloading(true);
 
                                 try {
                                     const res = await axios.post(
@@ -431,6 +437,7 @@ const BookPage = () => {
                                                 ...extraGuests,
                                             ],
                                             category,
+                                            email: userData.email,
                                         },
                                         {
                                             headers: {
@@ -441,16 +448,20 @@ const BookPage = () => {
 
                                     toast.success("Booking created successfully!");
                                     setMsg1(true);
+
                                     setShowSidebar(false);
                                 } catch (err) {
                                     console.error(err);
                                     toast.error("Booking failed!");
+                                } finally {
+                                    setBookloading(false);
                                 }
 
                             }}
-                            className="w-full bg-green-600 text-white p-2 mt-4 rounded transform transition-transform duration-500 ease-in-out hover:scale-105 hover:bg-green-800"
+                            className={`w-full text-white p-2 mt-4 rounded transform transition-transform duration-500 ease-in-out ${loading ? "bg-gray-500 cursor-not-allowed" : "bg-green-600 hover:scale-105 hover:bg-green-800"
+                                }`}
                         >
-                            Save
+                            {bookloading ? "Sending.." : "Send Request"}
                         </button>
                         <span
                             onClick={() => navigate("/tnc")}

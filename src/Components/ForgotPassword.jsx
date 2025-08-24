@@ -21,7 +21,7 @@ export default function ForgotPassword() {
 
     const handleSendOtp = async () => {
         try {
-            const res = await axios.post(backendUrl+"/api/user/forgot-password", { email });
+            const res = await axios.post(backendUrl + "/api/user/forgot-password", { email });
             toast.info("OTP sent to your mail");
             setVerify(true);
         } catch (err) {
@@ -35,7 +35,7 @@ export default function ForgotPassword() {
             return;
         }
         try {
-            await axios.post(backendUrl+"/api/user/reset-password", {
+            await axios.post(backendUrl + "/api/user/reset-password", {
                 email,
                 otp,
                 newPassword,
@@ -59,6 +59,8 @@ export default function ForgotPassword() {
                 fontFamily: "monospace"
             }}
         >
+            <img src="/Birla_Institute_of_Technology_Mesra_log.png" alt="bit_logo" className="absolute h-20 w-20 top-0 left-0 bg-transparent" />
+            <img src="/70_yrs_logo-removebg-preview.png" alt="bit_logo" className="absolute h-20 w-20 top-0 right-0 bg-transparent" />
             <div className="bg-black bg-opacity-35 p-8 rounded-lg shadow-lg w-[30rem] h-fit text-center backdrop-blur-md">
 
                 {/* Role Selection Buttons */}

@@ -13,7 +13,7 @@ const roomSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['Deluxe', 'Executive', 'Standard', 'Family'],
+    enum: ['Deluxe','Luxury', 'Executive', 'Standard', 'Family'],
     required: true
   },
   capacity: {
@@ -28,6 +28,12 @@ const roomSchema = new mongoose.Schema({
   images: [
     {
       type: String
+    }
+  ],
+  bookings: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "booking" // <-- Reference to booking model
     }
   ]
 }, {

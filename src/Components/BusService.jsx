@@ -1,7 +1,8 @@
 import React from 'react';
+import { PhoneIcon } from '@heroicons/react/24/solid';
 
 const BusService = () => {
-    const schedule = {
+  const schedule = {
     "Monday to Friday": [
       {
         from: "B.I.T. Mesra",
@@ -58,10 +59,20 @@ const BusService = () => {
   };
   return (
     <div style={styles.container} className='relative pt-[65px]'>
-        <div className='flex justify-center absolute inset-0 -z-10 min-h-screen w-full bg-custom-color bg-[radial-gradient(circle_at_60%_40%,#fce8d5_0%,#fef2e3_50%,#fff8ef_100%)]' style={{ pointerEvents: "none", zIndex: -1 }}></div>
-        <div className="flex justify-center bg-slate-200 p-6 shadow-lg rounded-lg w-full mb-1 mt-10">
-            <h1 className="text-2xl font-semibold" style={{ fontFamily: "monospace" }}>BIT Bus Schedule</h1>
+      <div className='flex justify-center absolute inset-0 -z-10 min-h-screen w-full bg-custom-color bg-[radial-gradient(circle_at_60%_40%,#fce8d5_0%,#fef2e3_50%,#fff8ef_100%)]' style={{ pointerEvents: "none", zIndex: -1 }}></div>
+      <div className="flex flex-col items-center bg-slate-200 p-6 shadow-lg rounded-lg w-full mb-1 mt-10">
+        <h1 className="text-2xl font-semibold" style={{ fontFamily: "monospace" }}>
+          BIT Bus Schedule
+        </h1>
+        <div className="flex items-center mt-2 text-gray-700 text-sm">
+          <PhoneIcon className="w-4 h-4 text-blue-600 mr-2" />
+          <span>Contact Transport Office: +91-XXXXXXXXXX</span>
         </div>
+      </div>
+
+      <span className="absolute mt-3 right-10 text-red-600 font-medium italic text-sm">
+        * Timings are subject to change. Please confirm with the bus conductor or the transport office before traveling.
+      </span>
 
       {Object.entries(schedule).map(([day, entries]) => (
         <div key={day} style={styles.section}>

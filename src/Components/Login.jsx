@@ -1,26 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { GoogleAuthProvider, signInWithPopup, getAuth } from "firebase/auth";
-import { initializeApp } from "firebase/app";
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "../firebase";
 import eye from "/eye.png";
 import eyecross from "/eyecross.png";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast, Slide } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
-// Firebase config (Replace with actual credentials)
-const firebaseConfig = {
-  apiKey: "AIzaSyD2Ccil92iORo2C3xxGgfxnLm6fHG9dQhs",
-  authDomain: "bitproject-99fac.firebaseapp.com",
-  projectId: "bitproject-99fac",
-  storageBucket: "bitproject-99fac.firebasestorage.app",
-  messagingSenderId: "437848530315",
-  appId: "1:437848530315:web:16eae4887d5d132be0e38e",
-  measurementId: "G-YPK3GCJPPX"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const googleProvider = new GoogleAuthProvider();
 
 const Login = () => {
   const [activeRole, setActiveRole] = useState("guest"); // Default to Guest Login
@@ -34,62 +19,66 @@ const Login = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const handleFormSubmit = async () => {
-  if (activeRole === "manager") {
-    try {
-      const res = await fetch("http://localhost:5000/api/admin/loginAdmin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+    if (activeRole === "manager") {
+      try {
+        const res = await fetch("http://localhost:5000/api/admin/loginAdmin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
 
-      const data = await res.json();
-      if (data.success) {
-        localStorage.setItem("adminToken", data.token); // store token
-        toast.success("Admin Login Successful");
-        setTimeout(() => navigate("/admin", { replace: true }), 1500); // 🟢 navigate to admin
-      } else {
-        toast.error(data.message || "Invalid Credentials");
+        const data = await res.json();
+        if (data.success) {
+          localStorage.setItem("adminToken", data.token); // store token
+          toast.success("Admin Login Successful");
+          setTimeout(() => navigate("/admin", { replace: true }), 1500); // 🟢 navigate to admin
+        } else {
+          toast.error(data.message || "Invalid Credentials");
+        }
+      } catch (err) {
+        console.error("Admin login error:", err);
+        toast.error("Something went wrong");
       }
-    } catch (err) {
-      console.error("Admin login error:", err);
-      toast.error("Something went wrong");
-    }
-  } else {
-  const endpoint = isSignup
-  ? "http://localhost:5000/api/user/register"
-  : "http://localhost:5000/api/user/login";
+    } else {
+      if (isSignup && password !== confirmPassword) {
+        toast.error("Passwords do not match");
+        return;
+      }
+      const endpoint = isSignup
+        ? "http://localhost:5000/api/user/register"
+        : "http://localhost:5000/api/user/login";
 
-  const payload = {
-    role: activeRole,
-    email,
-    password,
-    ...(isSignup && { confirmPassword }),
+      const payload = {
+        role: activeRole,
+        email,
+        password,
+        ...(isSignup && { confirmPassword }),
+      };
+
+      try {
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          localStorage.setItem("guestToken", data.token);
+          toast.success("Guest Login Successful", {
+            onClose: () => navigate("/profile", { replace: true }),
+            autoClose: 1500, // shorter toast duration
+          });
+        } else {
+          toast.error(data.message || "Login failed");
+        }
+      } catch (err) {
+        console.error("Guest auth error:", err);
+        toast.error("Something went wrong");
+      }
+    }
   };
-
-  try {
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json();
-
-    if (data.success) {
-  localStorage.setItem("guestToken", data.token);
-  toast.success("Guest Login Successful", {
-    onClose: () => navigate("/profile", { replace: true }),
-    autoClose: 1500, // shorter toast duration
-  });
-} else {
-      toast.error(data.message || "Login failed");
-    }
-  } catch (err) {
-    console.error("Guest auth error:", err);
-    toast.error("Something went wrong");
-  }
-}
-};
 
   useEffect(() => {
     if (activeRole !== "guest") {
@@ -97,34 +86,34 @@ const Login = () => {
     }
   }, [activeRole]);
 
-const handleLogin = async (provider) => {
-  try {
-    const result = await signInWithPopup(auth, provider);
-    const email = result.user.email;
+  const handleLogin = async (provider) => {
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const email = result.user.email;
 
-    // ⬇️ Send Gmail to backend to store and get JWT
-    const res = await fetch("http://localhost:5000/api/user/google-login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
-
-    const data = await res.json();
-
-    if (data.success) {
-      localStorage.setItem("guestToken", data.token);
-      toast.success("Google Login Successful", {
-        onClose: () => navigate("/profile", { replace: true }),
-        autoClose: 1000,
+      // ⬇️ Send Gmail to backend to store and get JWT
+      const res = await fetch("http://localhost:5000/api/user/google-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
       });
-    } else {
-      toast.error(data.message || "Google login failed");
+
+      const data = await res.json();
+
+      if (data.success) {
+        localStorage.setItem("guestToken", data.token);
+        toast.success("Google Login Successful", {
+          onClose: () => navigate("/profile", { replace: true }),
+          autoClose: 1000,
+        });
+      } else {
+        toast.error(data.message || "Google login failed");
+      }
+    } catch (error) {
+      console.error("Google login error:", error);
+      toast.error("Google login failed");
     }
-  } catch (error) {
-    console.error("Google login error:", error);
-    toast.error("Google login failed");
-  }
-};
+  };
 
 
   return (
@@ -135,6 +124,9 @@ const handleLogin = async (provider) => {
         fontFamily: "monospace"
       }}
     >
+      <img src="/Birla_Institute_of_Technology_Mesra_log.png" alt="bit_logo" className="absolute h-20 w-20 top-0 left-0 bg-transparent" />
+      <img src="/70_yrs_logo-removebg-preview.png" alt="bit_logo" className="absolute h-20 w-20 top-0 right-0 bg-transparent" />
+
       <div className="bg-black bg-opacity-35 p-8 rounded-lg shadow-lg w-[30rem] h-fit text-center backdrop-blur-md">
 
         {/* Role Selection Buttons */}
@@ -243,54 +235,77 @@ const handleLogin = async (provider) => {
               </button>
             ) : (
               <>
-                <button
-                  onClick={() => setIsSignup(true)}
-                  className="transform hover:scale-x-105 transition-transform duration-200 origin-left"
-                >
-                  Signup
-                </button>
-                <div className="relative group cursor-pointer" onMouseEnter={() => setShowlogtip(true)}
-                  onMouseLeave={() => setShowlogtip(false)}>
-                  <span className="bg-white text-black rounded-full w-4 h-4 font-bold inline-flex items-center justify-center">
-                    ?
-                  </span>
-                  {showlogtip && (
-                    <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 w-max max-w-[200px] text-xs text-white bg-gray-800 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
-                      If this is your first time, click here to sign up.
+                <div className="relative w-full flex justify-center items-center mt-4">
+                  {/* Signup (centered) */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setIsSignup(true)}
+                      className="transform hover:scale-x-105 transition-transform duration-200 origin-left"
+                    >
+                      Signup
+                    </button>
+
+                    {/* Tooltip */}
+                    <div
+                      className="relative group cursor-pointer"
+                      onMouseEnter={() => setShowlogtip(true)}
+                      onMouseLeave={() => setShowlogtip(false)}
+                    >
+                      <span className="bg-white text-black rounded-full w-4 h-4 font-bold inline-flex items-center justify-center">
+                        ?
+                      </span>
+                      {showlogtip && (
+                        <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 w-max max-w-[200px] text-xs text-white bg-gray-800 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                          If this is your first time, click here to sign up.
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
+
+                  {/* Forgot Password */}
+                  <button
+                    onClick={() => navigate("/forgot-password")} // create this function
+                    className="absolute right-2 text-white text-xs underline transform hover:scale-x-105 transition-transform duration-200 origin-left"
+                  >
+                    Forgot Password
+                  </button>
                 </div>
+
               </>
             )}
           </div>
         )}
 
-        <p className="text-gray-300 my-3">or</p>
+        {activeRole === "guest" && (
+          <>
+            <p className="text-gray-300 my-3">or</p>
 
-        {/* Google Login */}
-        <button
-          onClick={() => handleLogin(googleProvider)}
-          className="w-full bg-red-500 text-white py-2 rounded flex items-center justify-center gap-2 hover:bg-red-600 transition duration-300"
-        >
-          <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center">
-            <img src="/google.webp" alt="Google" className="w-4 h-4" />
-          </div>
-          <span>Sign in with Google</span>
-        </button>
+            {/* Google Login */}
+            <button
+              onClick={() => handleLogin(googleProvider)}
+              className="w-full bg-red-500 text-white py-2 rounded flex items-center justify-center gap-2 hover:bg-red-600 transition duration-300"
+            >
+              <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center">
+                <img src="/google.webp" alt="Google" className="w-4 h-4" />
+              </div>
+              <span>Sign in with Google</span>
+            </button>
+          </>
+        )}
       </div>
       <ToastContainer
-                      position="top-right"
-                      autoClose={3500}
-                      hideProgressBar={false}
-                      newestOnTop={true}
-                      closeOnClick
-                      rtl={false}
-                      pauseOnFocusLoss
-                      draggable
-                      pauseOnHover
-                      theme="light"
-                      transition={Slide}
-                  />
+          position="top-right"
+          autoClose={3500}
+          hideProgressBar={false}
+          newestOnTop={true}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+          transition={Slide}
+        />
     </div>
   );
 };

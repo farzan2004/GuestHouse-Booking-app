@@ -7,6 +7,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { jwtDecode } from "jwt-decode";
 import { toast } from "react-toastify";
 import { getAuth, signOut } from "firebase/auth";
+import Complaints from "./Complaints";
 
 
 export default function Admin() {
@@ -20,10 +21,10 @@ export default function Admin() {
         if (!token) {
             toast.error("Please log in as admin");
             navigate("/login");
-        }else {
-        const decoded = jwtDecode(token);
-        setAdminEmail(decoded.email); // or whatever you put in the token payload
-    }
+        } else {
+            const decoded = jwtDecode(token);
+            setAdminEmail(decoded.email); // or whatever you put in the token payload
+        }
     }, []);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const auth = getAuth();
@@ -37,14 +38,14 @@ export default function Admin() {
             <div className="absolute inset-0 -z-10 w-full h-full bg-custom-color bg-[radial-gradient(circle_at_top_left,#fff8ef_20%,#fce8d5_50%,#fef2e3_90%)]" />
 
             {/* Top Header inside reserved space */}
-            <div className="absolute top-0 left-0 w-full flex justify-between h-16 items-center px-6 mb-2 bg-custom-color border-b-2 border-gray-300 shadow-lg playfair">
-                <div className="flex items-center border-r-2 h-full border-gray-300 px-4">
-                    <span className="font-semibold text-lg">BITStayGo</span>
+            <div className="absolute top-0 left-0 w-full flex justify-between h-16 items-center px-4 mb-2 bg-custom-color border-b-2 border-gray-300 shadow-lg playfair">
+                <div className="flex items-center border-r-2 h-full border-gray-300 px-2">
+                    <span className="font-semibold font-cinzel text-lg">BITStay</span>
                 </div>
                 <div className="text-right">
-                    <p className="text-sm text-gray-600">Administrator</p>
-                    <p className="text-lg font-semibold text-gray-700 font-mono bg-gray-200 px-3 py-1 rounded-md">
-                        {adminEmail}
+                    <p className="text-lg text-center text-gray-600">Administrator</p>
+                    <p className="text-sm font-normal text-gray-700 font-mono bg-gray-200 px-3 py-1 rounded-md">
+                        {adminEmail.slice(0, -10)}
 
                     </p>
                 </div>
@@ -96,6 +97,7 @@ export default function Admin() {
                 {selectedSection === "dashboard" && <Dashboard />}
                 {selectedSection === "bookingRequests" && <BookingRequests />}
                 {selectedSection === "guestinfo" && <GuestInfo />}
+                {selectedSection === "complaints" && <Complaints />}
                 {showLogoutModal && (
                     <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm z-50 flex justify-center items-center">
                         <div className="bg-slate-200 rounded-xl p-6 shadow-xl w-[90%] max-w-md text-center">

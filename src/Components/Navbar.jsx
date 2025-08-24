@@ -30,14 +30,14 @@ const Navbar = () => {
     };
 
     return (
-        <nav className="fixed top-0 left-0 z-50 bg-custom-color flex justify-between items-center px-4 md:px-6 h-16 w-full border-b-2 border-gray-300 shadow-lg">
+        <nav className="fixed top-0 left-0 z-50 bg-custom-color flex justify-between items-center px-2 md:px-4 h-16 w-full border-b-2 border-gray-300 shadow-lg">
             {/* Left Logo & Name Section */}
-            <div className="flex items-center border-r-2 h-full border-gray-300 px-4">
-                <span className="font-semibold text-lg font-cinzel">BITStayGo</span>
+            <div className="flex items-center border-r-2 h-full border-gray-300 px-2">
+                <span className="font-semibold text-lg font-cinzel">BITStay</span>
             </div>
 
             {/* Right Navigation Menu */}
-            <ul className="flex items-center gap-6 text-gray-900">
+            <ul className="pl-2 flex items-center gap-6 text-gray-900">
                 {["Home", "Profile"].map((item, index) => (
                     <li key={index} className="group relative w-[75px] text-center">
                         <button
