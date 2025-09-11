@@ -12,7 +12,7 @@ import Admin from './Components/Admin';
 import BookPage from './Components/BookPage';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './ProtectedRoute';
-import AddRoomTypeForm from "./components/AddRoomTypeForm";
+import AddRoomTypeForm from "./Components/AddRoomTypeForm";
 import Chatbot from './Components/chatbot';
 import ForgotPassword from './Components/ForgotPassword';
 
