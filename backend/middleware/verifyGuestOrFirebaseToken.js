@@ -5,6 +5,9 @@ import admin from "firebase-admin";
 
 if (!admin.apps.length) {
   const serviceAccountB64 = process.env.FIREBASE_CREDENTIALS_BASE64;
+  if (!serviceAccountB64) {
+    throw new Error("FATAL ERROR: The FIREBASE_CREDENTIALS_BASE64 environment variable was not found on Render.");
+  }
   const serviceAccountJson = Buffer.from(serviceAccountB64, 'base64').toString('utf8');
   const serviceAccount = JSON.parse(serviceAccountJson);
 
