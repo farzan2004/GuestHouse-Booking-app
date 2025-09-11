@@ -33,7 +33,7 @@ const BookPage = () => {
     useEffect(() => {
         const fetchRoom = async () => {
             try {
-                const res = await axios.get(`http://localhost:5000/api/user/room/${id}`);
+                const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/user/room/${id}`);
                 setLoading(false);
                 setRoom(res.data);
             } catch (err) {
@@ -47,7 +47,7 @@ const BookPage = () => {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const res = await axios.get("http://localhost:5000/api/user/getProfileData", {
+                const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/user/getProfileData`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
@@ -96,7 +96,7 @@ const BookPage = () => {
         }
 
         try {
-            const res = await axios.post("http://localhost:5000/api/user/check-availability", {
+            const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/user/check-availability`, {
                 roomType: room.type,
                 checkInDate: checkIn,
                 checkOutDate: checkOut,
@@ -416,7 +416,7 @@ const BookPage = () => {
 
                                 try {
                                     const res = await axios.post(
-                                        "http://localhost:5000/api/user/createBooking",
+                                        `${import.meta.env.VITE_BACKEND_URL}/api/user/createBooking`,
                                         {
                                             rooms: roomIds,
                                             checkInDate: checkIn,

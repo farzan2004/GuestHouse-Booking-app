@@ -31,7 +31,7 @@ useEffect(() => {
     }
 
     try {
-      const res = await axios.get("http://localhost:5000/api/admin/listRoomTypes", {
+      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/listRoomTypes`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

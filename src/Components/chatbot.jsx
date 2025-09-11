@@ -40,7 +40,7 @@ const Chatbot = () => {
       if (idx >= 0 && idx < lastBookings.length) {
         const bookingId = lastBookings[idx]._id;
         await axios.delete(
-          `http://localhost:5000/api/user/Cancelbookings/${bookingId}`,
+          `${import.meta.env.VITE_BACKEND_URL}/api/user/Cancelbookings/${bookingId}`,
           config
         );
         setMessages((prev) => [
@@ -82,7 +82,7 @@ const Chatbot = () => {
 
     try {
       const chatResponse = await axios.post(
-        "http://localhost:5000/api/chat",
+        `${import.meta.env.VITE_BACKEND_URL}/api/chat`,
         { messages: [...messages, userMessage] },
         config
       );
@@ -91,7 +91,7 @@ const Chatbot = () => {
       let botReply = { sender: "bot", text: reply };
 
       if (intent === "show_bookings") {
-        const res = await axios.get("http://localhost:5000/api/user/user/bookings", config);
+        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/user/user/bookings`, config);
         setLastBookings(res.data.bookings);
         botReply.text = res.data.bookings?.length
           ? "Your bookings:\n" +
@@ -106,7 +106,7 @@ const Chatbot = () => {
       }
 
       else if (intent === "cancel_booking") {
-        const res = await axios.get("http://localhost:5000/api/user/user/bookings", config);
+        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/user/user/bookings`, config);
         const activeBookings = res.data.bookings?.filter(
           b => b.status !== "Cancelled" && b.status !== "Rejected"
         );
@@ -117,7 +117,7 @@ const Chatbot = () => {
         } else if (activeBookings?.length === 1) {
           const bookingId = activeBookings[0]._id;
           await axios.delete(
-            `http://localhost:5000/api/user/Cancelbookings/${bookingId}`,
+            `${import.meta.env.VITE_BACKEND_URL}api/user/Cancelbookings/${bookingId}`,
             config
           );
           botReply.text = "✅ Booking cancelled successfully!";
@@ -129,12 +129,12 @@ const Chatbot = () => {
       }
 
       else if (intent === "show_profile") {
-        const profileRes = await axios.get("http://localhost:5000/api/user/getProfileData", config);
+        const profileRes = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/user/getProfileData`, config);
         const u = profileRes.data.userData || {};
         const profileFacts = `User profile: Name: ${u.name}, Email: ${u.email}, Phone: ${u.phone}`;
         const contextForLLM = [userMessage, { sender: "bot", text: profileFacts }];
         const llmRes = await axios.post(
-          "http://localhost:5000/api/chat",
+          `${import.meta.env.VITE_BACKEND_URL}/api/chat`,
           { messages: contextForLLM },
           config
         );

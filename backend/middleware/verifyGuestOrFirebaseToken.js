@@ -4,8 +4,12 @@ import jwt from "jsonwebtoken";
 import admin from "firebase-admin";
 
 if (!admin.apps.length) {
+  const serviceAccountB64 = process.env.FIREBASE_CREDENTIALS_BASE64;
+  const serviceAccountJson = Buffer.from(serviceAccountB64, 'base64').toString('utf8');
+  const serviceAccount = JSON.parse(serviceAccountJson);
+
   admin.initializeApp({
-    credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)),
+    credential: admin.credential.cert(serviceAccount)
   });
 }
 

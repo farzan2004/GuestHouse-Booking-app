@@ -18,7 +18,7 @@ const AddRoomTypeForm = () => {
     images.forEach((img) => formData.append("images", img));
 
     try {
-      const res = await axios.post("http://localhost:5000/api/admin/add-room-type", formData, {
+      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/admin/add-room-type`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       alert("Room Type Added");

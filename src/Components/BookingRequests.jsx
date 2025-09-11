@@ -15,7 +15,7 @@ const BookingRequests = () => {
         const fetchRequests = async () => {
             try {
 
-                const res = await axios.get("http://localhost:5000/api/admin/bookingRequests", {
+                const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/bookingRequests`, {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }
@@ -46,7 +46,7 @@ const BookingRequests = () => {
             const token = localStorage.getItem("adminToken"); // or wherever you store JWT
 
             const res = await axios.post(
-                `http://localhost:5000/api/admin/bookingStatus/${id}`,
+                `${import.meta.env.VITE_BACKEND_URL}/api/admin/bookingStatus/${id}`,
                 { status: action },
                 {
                     headers: {
