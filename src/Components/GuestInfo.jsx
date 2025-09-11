@@ -16,7 +16,7 @@ const GuestInfo = () => {
     }
         const fetchGuests = async () => {
             try {
-                const res = await axios.get("http://localhost:5000/api/admin/listBookedRoomsWithGuests", {
+                const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/listBookedRoomsWithGuests`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },

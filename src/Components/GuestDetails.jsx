@@ -13,7 +13,7 @@ const GuestDetails = ({ id, onBack }) => {
         }
         const fetchGuest = async () => {
             try {
-                const res = await fetch(`http://localhost:5000/api/admin/guests/${id}`, {
+                const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/admin/guests/${id}`, {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }
@@ -36,7 +36,7 @@ const GuestDetails = ({ id, onBack }) => {
     if (!window.confirm("Are you sure you want to delete this guest?")) return;
 
     try {
-        const res = await fetch(`http://localhost:5000/api/admin/guests/${id}`, {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/admin/guests/${id}`, {
             method: "DELETE",
             headers: {
                         Authorization: `Bearer ${token}`

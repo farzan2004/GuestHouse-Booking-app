@@ -21,7 +21,7 @@ const Login = () => {
   const handleFormSubmit = async () => {
     if (activeRole === "manager") {
       try {
-        const res = await fetch("http://localhost:5000/api/admin/loginAdmin", {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/admin/loginAdmin`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
@@ -45,8 +45,8 @@ const Login = () => {
         return;
       }
       const endpoint = isSignup
-        ? "http://localhost:5000/api/user/register"
-        : "http://localhost:5000/api/user/login";
+        ? `${import.meta.env.VITE_BACKEND_URL}/api/user/login`
+        : `${import.meta.env.VITE_BACKEND_URL}/api/user/register`;
 
       const payload = {
         role: activeRole,
@@ -92,7 +92,7 @@ const Login = () => {
       const email = result.user.email;
 
       // ⬇️ Send Gmail to backend to store and get JWT
-      const res = await fetch("http://localhost:5000/api/user/google-login", {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/user/google-login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

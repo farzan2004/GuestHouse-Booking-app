@@ -51,7 +51,7 @@ export default function Profile() {
             try {
                 if (!token) return;
 
-                const res = await axios.get("http://localhost:5000/api/user/getProfileData", {
+                const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/user/getProfileData`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
 
@@ -131,7 +131,7 @@ export default function Profile() {
                 pincode: formData.pinCode,
             };
 
-            const res = await axios.post("http://localhost:5000/api/user/updateProfileData", updatedData, {
+            const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/user/updateProfileData`, updatedData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -161,7 +161,7 @@ export default function Profile() {
             }
 
             const res = await axios.post(
-                "http://localhost:5000/api/admin/complaints",
+                `${import.meta.env.VITE_BACKEND_URL}/api/admin/complaints`,
                 { subject: subject.trim(), message: message.trim() },
                 { headers: { Authorization: `Bearer ${tokenToSend}` } }
             );
@@ -180,7 +180,7 @@ export default function Profile() {
     };
     const fetchUserBookings = async () => {
         try {
-            const res = await axios.get("http://localhost:5000/api/user/user/bookings", {
+            const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/user/user/bookings`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 

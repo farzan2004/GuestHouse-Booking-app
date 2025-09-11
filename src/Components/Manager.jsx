@@ -13,7 +13,7 @@ const Manager = () => {
   useEffect(() => {
   const fetchRooms = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/user/rooms");
+      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/user/rooms`);
       if (res.data.success) {
         setLoading(false);
         setRooms(res.data.rooms);
