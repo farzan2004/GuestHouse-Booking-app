@@ -1,3 +1,4 @@
+console.log("Checking for Firebase creds:", process.env.FIREBASE_CREDENTIALS_BASE64 ? "Found" : "NOT FOUND");
 import express from "express"
 import cors from "cors"
 import 'dotenv/config'
