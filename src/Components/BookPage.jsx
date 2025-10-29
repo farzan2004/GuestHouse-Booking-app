@@ -445,9 +445,9 @@ const BookPage = () => {
                                             },
                                         }
                                     );
-
-                                    toast.success("Booking created successfully!");
                                     setMsg1(true);
+                                    toast.success("Booking created successfully!");
+                                    
 
                                     setShowSidebar(false);
                                 } catch (err) {
@@ -458,7 +458,7 @@ const BookPage = () => {
                                 }
 
                             }}
-                            className={`w-full text-white p-2 mt-4 rounded transform transition-transform duration-500 ease-in-out ${loading ? "bg-gray-500 cursor-not-allowed" : "bg-green-600 hover:scale-105 hover:bg-green-800"
+                            className={`w-full text-white p-2 mt-4 rounded transform transition-transform duration-500 ease-in-out ${bookloading ? "bg-gray-500 cursor-not-allowed" : "bg-green-600 hover:scale-105 hover:bg-green-800"
                                 }`}
                         >
                             {bookloading ? "Sending.." : "Send Request"}
