@@ -389,24 +389,29 @@ const cancelBooking = async (req, res) => {
 
 export const sendOtp = async (req, res) => {
   const { email } = req.body;
-  const otp = Math.floor(100000 + Math.random() * 900000); // 6-digit OTP
-  const expiresAt = Date.now() + 5 * 60 * 1000; // expires in 5 min
-
+  const otp = Math.floor(100000 + Math.random() * 900000);
+  const expiresAt = Date.now() + 5 * 60 * 1000;
   otpStore.set(email, { otp, expiresAt });
-  
-  console.log("MAIL_USER:", process.env.MAIL_USER);
-  // Send mail
+
+  console.log("Incoming forgot-password request for:", email);
+
   try {
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: process.env.MAIL_USER,
       to: email,
-      subject: 'Your OTP for password reset',
-      html: `<p>Your OTP is <b>${otp}</b>. It expires in 5 minutes.</p>`
+      subject: "Your OTP for password reset",
+      html: `<p>Your OTP is <b>${otp}</b>. It expires in 5 minutes.</p>`,
     });
 
-    res.json({ success: true, message: 'OTP sent' });
+    console.log("Mail sent successfully:", info.response);
+    res.json({ success: true, message: "OTP sent" });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to send OTP' });
+    console.error("❌ SendMail failed:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to send OTP",
+      error: err.message,
+    });
   }
 };
 
