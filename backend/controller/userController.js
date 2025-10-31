@@ -393,7 +393,8 @@ export const sendOtp = async (req, res) => {
   const expiresAt = Date.now() + 5 * 60 * 1000; // expires in 5 min
 
   otpStore.set(email, { otp, expiresAt });
-
+  
+  console.log("MAIL_USER:", process.env.MAIL_USER);
   // Send mail
   try {
     await transporter.sendMail({
