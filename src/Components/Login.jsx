@@ -45,8 +45,8 @@ const Login = () => {
         return;
       }
       const endpoint = isSignup
-        ? `${import.meta.env.VITE_BACKEND_URL}/api/user/login`
-        : `${import.meta.env.VITE_BACKEND_URL}/api/user/register`;
+        ? `${import.meta.env.VITE_BACKEND_URL}/api/user/register`
+        : `${import.meta.env.VITE_BACKEND_URL}/api/user/login`;
 
       const payload = {
         role: activeRole,
