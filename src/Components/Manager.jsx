@@ -11,21 +11,21 @@ const Manager = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-  const fetchRooms = async () => {
-    try {
-      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/user/rooms`);
-      if (res.data.success) {
-        setLoading(false);
-        setRooms(res.data.rooms);
-      } else {
-        console.error("Error:", res.data.message);
+    const fetchRooms = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/user/rooms`);
+        if (res.data.success) {
+          setLoading(false);
+          setRooms(res.data.rooms);
+        } else {
+          console.error("Error:", res.data.message);
+        }
+      } catch (err) {
+        console.error("Failed to fetch rooms:", err);
       }
-    } catch (err) {
-      console.error("Failed to fetch rooms:", err);
-    }
-  };
-  fetchRooms();
-}, []);
+    };
+    fetchRooms();
+  }, []);
 
 
   const handleBooking = (room) => {
@@ -46,9 +46,9 @@ const Manager = () => {
       setStartIndex(startIndex - 1);
     }
   };
-  if(loading){
-    return(
-      <ManagerSkeleton/>
+  if (loading) {
+    return (
+      <ManagerSkeleton />
     )
   }
   return (
@@ -78,7 +78,9 @@ const Manager = () => {
               <img
                 src={room.images[0] || "/fallback.jpg"}
                 alt={room.title}
-                className='w-full h-60 object-cover transform rounded-xl  transition-transform duration-500 group-hover:scale-110' onClick={() => handleBooking(room)}
+                loading="lazy"
+                className='w-full h-60 object-cover transform rounded-xl transition-transform duration-500 group-hover:scale-110'
+                onClick={() => handleBooking(room)}
               />
             </div>
             <div className='p-4 bg-custom-color text-center' onClick={() => handleBooking(room)}>
@@ -118,6 +120,7 @@ const Manager = () => {
                   <img
                     src={room.images[0] || "/fallback.jpg"}
                     alt={room.type}
+                    loading="lazy"
                     className='w-full h-60 object-cover rounded-lg transform transition-transform duration-500 group-hover:scale-110' onClick={() => handleBooking(room)}
                   />
                 </div>

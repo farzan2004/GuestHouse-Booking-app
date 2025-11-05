@@ -1,20 +1,26 @@
+import React, { Suspense, lazy } from 'react';
 import './App.css'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import Login from './Components/Login'
+const Login = lazy(() => import('./Components/Login'));
 import Navbar from './Components/Navbar'
-import Manager from './Components/Manager'
+const Manager = lazy(() => import('./Components/Manager'));
 import Footer from './Components/Footer'
 import TandC from './Components/TandC';
-import Campus from './Components/Campus';
-import Profile from './Components/Profile';
+const Campus = lazy(() => import('./Components/Campus'));
+const Profile = lazy(() => import('./Components/Profile'));
 import BusService from './Components/BusService';
-import Admin from './Components/Admin';
-import BookPage from './Components/BookPage';
+const BookPage = lazy(() => import('./Components/BookPage'));
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './ProtectedRoute';
-import AddRoomTypeForm from "./Components/AddRoomTypeForm";
-import Chatbot from './Components/chatbot';
-import ForgotPassword from './Components/ForgotPassword';
+const Chatbot = lazy(() => import('./Components/chatbot'));
+const ForgotPassword = lazy(() => import('./Components/ForgotPassword'));
+import ManagerSkeleton from './Skeletons/managerSkeleton';
+import CampusSkeleton from "./Skeletons/campusmapSkeleton";
+import ProfileSkeleton from "./Skeletons/profileSkeleton";
+import BookPageSkeleton from './Skeletons/bookpageSkeleton';
+const Admin = lazy(() => import('./Components/Admin'));
+const AddRoomTypeForm = lazy(() => import('./Components/AddRoomTypeForm'));
+
 
 // const GOOGLE_MAPS_API_KEY = "AIzaSyB6Z9F2vwV9ioiANgiu6MpF5EFLkWhNZbQ";
 
@@ -26,35 +32,54 @@ const AppLayout = () => {
         <>
             {/* <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY} libraries={["places"]}> */}
             {!hideNavbarFooter && <Navbar />}
-
             <Routes>
-                <Route path="/" element={<Manager />} />
-                <Route path="/home" element={<Manager />} />
-                <Route path="/campus-guide" element={<Campus />} />
-                <Route path="/bus-service" element={<BusService/>} />
+                <Route path="/" element={
+                    <Suspense fallback={<ManagerSkeleton />}>
+                        <Manager />
+                    </Suspense>
+                } />
+                <Route path="/home" element={
+                    <Suspense fallback={<ManagerSkeleton />}>
+                        <Manager />
+                    </Suspense>
+                } />
+                <Route path="/campus-guide" element={
+                    <Suspense fallback={<CampusSkeleton />}>
+                        <Campus />
+                    </Suspense>
+                } />
+                <Route path="/bus-service" element={<BusService />} />
 
-                <Route path="/login" element={<Login />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/login" element={<Suspense fallback={<div>Loading...</div>}>
+                    <Login />
+                </Suspense>} />
+                <Route path="/forgot-password" element={<Suspense fallback={<div>Loading...</div>}>
+                    <ForgotPassword />
+                </Suspense>} />
                 <Route
                     path="/profile"
                     element={
                         <ProtectedRoute>
-                            <Profile />
+                            <Suspense fallback={<ProfileSkeleton />}>
+                                <Profile />
+                            </Suspense>
                         </ProtectedRoute>
                     }
                 />
                 <Route path="/admin" element={<Admin />} />
-                <Route path="/admin/addroomtype" element={<AddRoomTypeForm/>} />
+                <Route path="/admin/addroomtype" element={<AddRoomTypeForm />} />
                 <Route
                     path="/bookpage/:id"
                     element={
                         <ProtectedRoute>
-                            <BookPage />
+                            <Suspense fallback={<BookPageSkeleton />}>
+                                <BookPage />
+                            </Suspense>
                         </ProtectedRoute>
                     }
                 />
-                <Route path="tnc" element={<TandC/>} />
-                <Route path="faq-ai" element={<Chatbot/>} />
+                <Route path="tnc" element={<TandC />} />
+                <Route path="faq-ai" element={<Chatbot />} />
             </Routes>
 
             {!hideNavbarFooter && <Footer />}
@@ -68,7 +93,7 @@ const App = () => {
     return (
         <Router>
             <AuthProvider>
-                    <AppLayout />
+                <AppLayout />
             </AuthProvider>
         </Router>
     );
