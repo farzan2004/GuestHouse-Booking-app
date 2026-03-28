@@ -6,7 +6,7 @@ dotenv.config();
 
 const chatRouter = express.Router();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY; // Put key in .env
-const MODEL = "gemini-2.0-flash";
+const MODEL = "gemini-2.5-flash-lite";
 
 // ---------------- SYSTEM PROMPT ----------------
 const systemPrompt = `
@@ -133,23 +133,38 @@ const sendToGemini = async (messageHistory) => {
 // ---------------- CHAT ROUTE ----------------
 chatRouter.post("/", async (req, res) => {
   const { messages } = req.body;
-
   try {
-    
-    const lastText = messages[messages.length - 1]?.text?.trim() || "";
-    const hasProfileContext = lastText.startsWith("User profile:");
+    if (!messages || !Array.isArray(messages)) {
+      console.log("❌ Invalid messages format");
+      return res.status(400).json({ reply: "Invalid messages format" });
+    }
 
+    const lastText = messages[messages.length - 1]?.text?.trim() || "";
+    console.log(" Last message text:", lastText);
+    const hasProfileContext = lastText.startsWith("User profile:");
+    console.log(" Has profile context:", hasProfileContext);
+    const trimmedMessages = [
+      messages[0],              // initial greeting/system
+      ...messages.slice(-5)     // recent conversation
+    ];
+    console.log(" edited messages:", JSON.stringify(trimmedMessages, null, 2));
     // Ask LLM for reply
-    const rawReply = await sendToGemini(messages);
+    console.log(" Sending to Gemini...");
+    const rawReply = await sendToGemini(trimmedMessages);
+    console.log(" Raw Gemini reply:", rawReply);
     const reply = (rawReply || "").trim();
+    console.log(" Trimmed reply:", reply);
 
     // 1️⃣ Response to profile info message
     if (hasProfileContext) {
+      console.log(" Profile context branch");
       if (!reply || reply === "." || reply.length < 5) {
+        console.log(" Invalid reply → fallback");
         return res.json({
           reply: "Here are your profile details as requested.",
         });
       }
+      console.log("Sending profile reply");
       return res.json({ reply });
     }
 
@@ -158,11 +173,18 @@ chatRouter.post("/", async (req, res) => {
     try {
       // Use regex to find a JSON block anywhere in the assistant's answer
       const match = reply.match(/\{[\s\S]*?\}/);
+      console.log(" JSON match:", match?.[0]);
       parsedIntent = match ? JSON.parse(match[0]) : null;
-    } catch { parsedIntent = null; }
+      console.log(" Parsed intent:", parsedIntent);
+    } catch (err) {
+      console.log(" JSON parse failed:", err.message);
+      parsedIntent = null;
+    }
 
     if (parsedIntent?.intent === "check_availability") {
+      console.log("Check availability intent");
       const { room_type, dates } = parsedIntent;
+      console.log("Data:", { room_type, dates });
 
       if (!room_type) {
         return res.json({ reply: "Certainly! Which type of room are you interested in? We have Standard, Deluxe, Executive, and Family rooms." });
@@ -194,10 +216,13 @@ chatRouter.post("/", async (req, res) => {
       reply: reply || "🤖 Sorry, I didn't understand. Could you please try again?",
     });
   } catch (error) {
-    const errorMsg =
-      error.response?.data?.error?.message ||
-      error.message ||
-      "Unexpected server error.";
+    console.log("💥 ERROR OCCURRED:", error.message);
+    const status = error.response?.status;
+    console.log("DATA:", JSON.stringify(error.response?.data, null, 2)); if (status === 429) {
+      return res.json({
+        reply: "⚠️ I'm getting too many requests right now. Please try again in a few seconds."
+      });
+    }
     return res.status(500).json({
       reply: `❌ Assistant error: ${errorMsg}`,
     });

@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const roomTypeSchema = new mongoose.Schema({
   type: {
     type: String,
-    enum: ['Deluxe', 'Executive', 'Luxury', 'Standard', 'Family Suite'],
+    enum: ['Mass Bookings' ,'Suite','Large', 'Regular', 'Small'],
     required: true,
     unique: true
   },

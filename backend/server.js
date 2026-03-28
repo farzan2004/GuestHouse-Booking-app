@@ -30,11 +30,17 @@ app.use(cors({
   origin: "*",
   credentials: true
 }));
-
+app.use((req, res, next) => {
+  console.log("🌍 Incoming request:", req.method, req.url);
+  next();
+});
 app.use('/api/admin/',adminRouter)
 //localhost:5000/api/admin/add-doctor
 app.use('/api/user',userRouter)
-app.use('/api/chat', chatRouter);
+app.use('/api/chat', (req, res, next) => {
+  console.log("➡️ Hit /api/chat middleware");
+  next();
+}, chatRouter);
 
 app.get('/',(req,res)=>{
     res.send("API working")

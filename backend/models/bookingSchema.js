@@ -28,7 +28,8 @@ const bookingSchema = new mongoose.Schema({
             'Alumni',
             'Guardian',
             'Guests from Other Academic Institutions',
-            'Others'
+            'Others',
+            'Bulk'
         ],
         required: true
     },

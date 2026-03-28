@@ -76,7 +76,7 @@ const Manager = () => {
           <div key={room._id} className='group relative cursor-pointer overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-500'>
             <div className='overflow-hidden'>
               <img
-                src={room.images[0] || "/fallback.jpg"}
+                src={room.images[0]?? "/Bulk.png"}
                 alt={room.title}
                 loading="lazy"
                 className='w-full h-60 object-cover transform rounded-xl transition-transform duration-500 group-hover:scale-110'
@@ -86,7 +86,7 @@ const Manager = () => {
             <div className='p-4 bg-custom-color text-center' onClick={() => handleBooking(room)}>
 
               <h3 className='text-lg font-semibold text-custom-black'>{room.type}</h3>
-              <p className='text-sm font-normal text-custom-black mt-1'>₹{room.price} / night</p>
+              <p className='text-sm font-normal text-custom-black mt-1'>₹{room.price??"NA"} / night</p>
               <p className='text-gray-500 text-sm mt-2'>{room.description}</p>
               <button onClick={() => handleBooking(room)} className="block mt-3 text-gray-500 text-sm font-medium relative w-max mx-auto no-underline hover: text-black transition inline-block group">
                 Book Now
@@ -118,7 +118,7 @@ const Manager = () => {
               <div key={room._id} className='md:min-w-[calc(100%/3)] min-w-full group relative cursor-pointer overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-500'>
                 <div className='overflow-hidden'>
                   <img
-                    src={room.images[0] || "/fallback.jpg"}
+                    src={room.images[0]?? "/Bulk.png"}
                     alt={room.type}
                     loading="lazy"
                     className='w-full h-60 object-cover rounded-lg transform transition-transform duration-500 group-hover:scale-110' onClick={() => handleBooking(room)}
@@ -126,7 +126,7 @@ const Manager = () => {
                 </div>
                 <div className='p-4 bg-custom-color text-center' onClick={() => handleBooking(room)}>
                   <h3 className='text-xl font-semibold text-custom-black'>{room.type}</h3>
-                  <p className='text-base font-medium text-custom-black mt-1'>₹{room.price} /night</p>
+                  <p className='text-base font-medium text-custom-black mt-1'>₹{room.price??"NA"} /night</p>
                   <p className='text-gray-600 mt-2'>{room.description}</p>
                   <button onClick={() => handleBooking(room)} className="block mt-3 text-black text-lg font-medium relative w-max mx-auto no-underline hover: text-gray-600 transition inline-block group">
                     Book Now

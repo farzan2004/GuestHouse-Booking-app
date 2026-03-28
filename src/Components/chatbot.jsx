@@ -117,7 +117,7 @@ const Chatbot = () => {
         } else if (activeBookings?.length === 1) {
           const bookingId = activeBookings[0]._id;
           await axios.delete(
-            `${import.meta.env.VITE_BACKEND_URL}api/user/Cancelbookings/${bookingId}`,
+            `${import.meta.env.VITE_BACKEND_URL}/api/user/Cancelbookings/${bookingId}`,
             config
           );
           botReply.text = "✅ Booking cancelled successfully!";

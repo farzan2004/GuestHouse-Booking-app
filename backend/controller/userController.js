@@ -218,6 +218,51 @@ export {
   findAvailableRoomsLogic
 };
 
+export const checkBulkAvailableRoom = async (req, res) => {
+  try {
+    const { roomsNeeded, checkInDate, checkOutDate } = req.body;
+    if (!roomsNeeded || roomsNeeded < 1) {
+      return res.status(400).json({ success: false, message: "Invalid number of rooms requested" });
+    }
+
+    const priority = ["Small", "Regular", "Large", "Suite"];
+    let allocated = [];
+    let remaining = roomsNeeded;
+
+    for (const type of priority) {
+      if (remaining <= 0) break;
+
+      // reuse existing logic
+      const result = await findAvailableRoomsLogic(type, checkInDate, checkOutDate, remaining);
+
+      if (result.success) {
+        allocated.push(...result.roomIds);
+        remaining -= result.roomIds.length;
+      }
+      // if result not success, that type had none — continue to next type
+    }
+
+    if (remaining > 0) {
+      return res.status(404).json({
+        success: false,
+        message: `Only ${roomsNeeded - remaining} rooms available out of requested ${roomsNeeded}.`
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      roomIds: allocated
+    });
+
+  } catch (err) {
+    console.error("Bulk availability error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Error checking bulk room availability"
+    });
+  }
+};
+
 
 const createBooking = async (req, res) => {
   try {
@@ -323,6 +368,87 @@ const createBooking = async (req, res) => {
   } catch (err) {
     console.error("Booking Error:", err);
     res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+export const createBulkBooking = async (req, res) => {
+  console.log("\n=== BULK BOOKING CALLED ===");
+  console.log("BODY:", req.body);
+  console.log("USER:", req.userId);
+
+  try {
+    const { rooms, checkInDate, checkOutDate, mainGuest } = req.body;
+
+    if (!rooms || !Array.isArray(rooms) || rooms.length === 0)
+      return res.status(400).json({ error: "Rooms array is invalid" });
+
+    if (!mainGuest || !checkInDate || !checkOutDate)
+      return res.status(400).json({ error: "Missing fields" });
+
+    const start = new Date(checkInDate);
+    const end = new Date(checkOutDate);
+
+    const savedBookings = [];
+
+    for (const roomId of rooms) {
+      const room = await roomModel.findById(roomId);
+      if (!room)
+        return res.status(404).json({ error: `Room not found: ${roomId}` });
+
+      const conflict = await bookingModel.findOne({
+        room: roomId,
+        status: { $in: ["Pending", "Approved"] },
+        checkInDate: { $lte: end },
+        checkOutDate: { $gte: start }
+      });
+
+      if (conflict)
+        return res.status(400).json({ error: `Room ${roomId} got booked recently.` });
+
+      // 🔥 FIX: Use guestData instead of mainGuest
+      const guestData = {
+        fullName: mainGuest.fullName,
+        gender: mainGuest.gender || "Other",
+        contact: mainGuest.contact || "N/A",
+        age: mainGuest.age || 0,
+        relation: "Self",
+        dob: mainGuest.dob || "",
+        city: mainGuest.city || "",
+        state: mainGuest.state || "",
+        address: mainGuest.address || "",
+        idProofUrl: mainGuest.idProofUrl || ""
+      };
+
+      const booking = new bookingModel({
+        user: req.userId,
+        guests: [guestData],                // ✔ FIXED
+        checkInDate,
+        checkOutDate,
+        room: roomId,
+        room_type: room.type,
+        category: "Bulk",                // ✔ FIXED (valid enum)
+        status: "Pending"
+      });
+
+      await booking.save();
+      savedBookings.push(booking);
+
+      await roomModel.findByIdAndUpdate(roomId, {
+        $push: { bookings: booking._id }
+      });
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "Bulk bookings created.",
+      bookings: savedBookings
+    });
+
+  } catch (err) {
+    console.error("\n❌ BULK BOOKING ERROR STACK ↓↓↓");
+    console.error(err);
+    console.error("====================================\n");
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 

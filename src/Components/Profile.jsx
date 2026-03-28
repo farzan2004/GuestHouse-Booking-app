@@ -219,7 +219,7 @@ export default function Profile() {
                             }`}
                         onClick={() => setSelectedSection("bookings")}
                     >
-                        Your Bookings
+                        My Bookings
                         <span className="absolute left-0 bottom-0 w-0 h-[2px] bg-gray-900 transition-all duration-300 group-hover:w-full"></span>
                     </li>
                     <li

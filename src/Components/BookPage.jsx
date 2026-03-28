@@ -78,9 +78,43 @@ const BookPage = () => {
             toast.error("Please complete your account info before booking.");
             return;
         }
-        setShowSidebar(true);
+        if(room.type === "Mass Bookings"){
+          // to implement.
+          try {
+            setBookloading(true);
 
+            const res = await axios.post(
+                `${import.meta.env.VITE_BACKEND_URL}/api/user/create-bulk-booking`,
+                {
+                    rooms: roomIds,  // this is from bulk availability API
+                    checkInDate: checkIn,
+                    checkOutDate: checkOut,
+                    mainGuest: {
+                        fullName: userData.name,
+                        contact: userData.phone,
+                        email: userData.email,
+                        city: userData.city,
+                        state: userData.state,
+                        address: userData.address
+                    }
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
 
+            toast.success("Bulk booking created successfully!");
+            setMsg1(true);
+
+        } catch (err) {
+            console.error(err);
+            toast.error("Bulk booking failed!");
+        } finally {
+            setBookloading(false);
+        }  
+        } else setShowSidebar(true);
     };
 
     useEffect(() => {
@@ -96,19 +130,38 @@ const BookPage = () => {
         }
 
         try {
-            const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/user/check-availability`, {
-                roomType: room.type,
+            const type = room.type;
+            console.log(type);
+            if(type === "Mass Bookings"){
+                //for bulk bookings api.
+                const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/user/check-bulk-availability`, {
+                    //to implemnt.
+                    roomsNeeded: roomCount,
+                    checkInDate: checkIn,
+                    checkOutDate: checkOut
+                })
+                if (res.data.success && res.data.roomIds?.length) {
+                toast.success("Rooms available for bulk bookings. Proceed to book.");
+                setConfirmed(true);
+                setRoomIds(res.data.roomIds);  // array of room IDs
+                } else {
+                toast.error(res.data.message || "No available rooms found.");
+                }
+            }
+            else { const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/user/check-availability`, {
+                roomType: type,
                 checkInDate: checkIn,
                 checkOutDate: checkOut,
                 roomCount
-            });
+                });
 
-            if (res.data.success && res.data.roomIds?.length) {
+                if (res.data.success && res.data.roomIds?.length) {
                 toast.success("Rooms available. Proceed to book.");
                 setConfirmed(true);
                 setRoomIds(res.data.roomIds);  // array of room IDs
-            } else {
+                } else {
                 toast.error(res.data.message || "No available rooms found.");
+                }
             }
         } catch (err) {
             console.error(err);
@@ -133,7 +186,7 @@ const BookPage = () => {
 
             {/* Room Image */}
             <div className='relative flex justify-center items-center md:h-[70vh] h-[50vh] md:px-[35px] px-[10px] py-[5px]'>
-                <img src={room.images[0]} alt={room.title} className='w-full h-full object-cover blur-[2px]' />
+                <img src={room.images[0]?? "/Bulk.png"} alt={room.title} className='w-full h-full object-cover blur-[2px]' />
 
                 {/* Greeting Text */}
                 <div className="absolute bottom-20 md:left-16 left-8  text-white p-4 rounded-lg text-right" style={{ fontFamily: 'monospace' }}>
@@ -217,7 +270,7 @@ const BookPage = () => {
                                 <DatePicker
                                     selected={checkIn}
                                     onChange={(date) => setCheckIn(date)}
-                                    minDate={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)}
+                                    minDate={new Date(Date.now() + 1 * 24 * 60 * 60 * 1000)}
                                     popperPlacement="bottom"
                                     className="p-2 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-orange-400"
                                     placeholderText="Select date"
