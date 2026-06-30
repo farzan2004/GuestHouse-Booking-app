@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import axios from "axios";
 
 const AddRoomTypeForm = () => {
-  const [type, setType] = useState("Deluxe");
+  const [type, setType] = useState("Suite");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
   const [images, setImages] = useState([]);

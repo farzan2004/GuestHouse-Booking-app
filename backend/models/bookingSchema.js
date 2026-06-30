@@ -34,9 +34,11 @@ const bookingSchema = new mongoose.Schema({
         required: true
     },
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'userGuest', required: true },
-    status: { type: String, enum: ['Pending', 'Approved', 'Rejected', 'Cancelled', 'Completed'], default: 'Pending' }
+    status: { type: String, enum: ['Pending', 'Approved', 'Rejected', 'Cancelled', 'Completed'], default: 'Pending' },
+    paymentStatus: { type: String, enum: ['Unpaid', 'Paid'], default: 'Unpaid' },
+    amount: { type: Number, default: 0 }
 }, {
-    timestamps: true // <-- ✅ Add this line here
+    timestamps: true
 });
 
 const bookingModel = mongoose.models.booking || mongoose.model('booking', bookingSchema);

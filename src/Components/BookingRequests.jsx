@@ -28,7 +28,7 @@ const BookingRequests = () => {
         };
         fetchRequests();
     }, []);
-    const [selectedStatus, setSelectedStatus] = useState("All");
+    const [selectedStatus, setSelectedStatus] = useState("Pending");
     const [currentPage, setCurrentPage] = useState(1);
     const requestsPerPage = 3;
 
@@ -68,7 +68,7 @@ const BookingRequests = () => {
     };
 
     return (
-        <div className="p-4 flex flex-col gap-4">
+        <div className="pb-4 flex flex-col gap-4">
             {selectedGuestId ? (
                 <GuestDetails id={selectedGuestId} onBack={() => setSelectedGuestId(null)} />
             ) : (
@@ -89,8 +89,8 @@ const BookingRequests = () => {
                                     setCurrentPage(1);
                                 }}
                             >
-                                <option className="md:block hidden" value="All">All</option>
-                                <option value="pending">Pending</option>
+                                <option className="md:block hidden" value="pending">Pending</option>
+                                <option value="All">All</option>
                                 <option value="approved">Approved</option>
                                 <option value="rejected">Rejected</option>
                             </select>
@@ -126,7 +126,6 @@ const BookingRequests = () => {
                                                             console.warn("No guests found in request:", req);
                                                         }
                                                     }}
-                                                // or req.user_id depending on your schema
                                                 >
                                                     {req.user_name}
                                                 </button></td>

@@ -77,7 +77,7 @@ const GuestInfo = () => {
     const paginatedGuests = sortedGuests.slice(startIndex, startIndex + guestsPerPage);
 
     return (
-        <div className="p-4 flex flex-col gap-4">
+        <div className="pb-4 flex flex-col gap-4">
             {selectedGuestId ? (
             <GuestDetails id={selectedGuestId} onBack={() => setSelectedGuestId(null)} />
         ) : (

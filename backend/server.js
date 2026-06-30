@@ -9,7 +9,8 @@ import userRouter from "./routes/userRoutes.js"
 import chatRouter from "./routes/chatRoutes.js"
 import path from 'path';
 import cron from "node-cron";
-import { autoUpdateRoomStatus } from "./controller/adminController.js";
+import { autoUpdateRoomStatus } from "./controller/adminController.js"
+import paymentRouter from "./routes/paymentRoutes.js";
 
 const app = express()
 app.use(express.json());
@@ -41,7 +42,7 @@ app.use('/api/chat', (req, res, next) => {
   console.log("➡️ Hit /api/chat middleware");
   next();
 }, chatRouter);
-
+app.use('/api/payment',paymentRouter);
 app.get('/',(req,res)=>{
     res.send("API working")
 })

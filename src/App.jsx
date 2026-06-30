@@ -18,6 +18,7 @@ import ManagerSkeleton from './Skeletons/managerSkeleton';
 import CampusSkeleton from "./Skeletons/campusmapSkeleton";
 import ProfileSkeleton from "./Skeletons/profileSkeleton";
 import BookPageSkeleton from './Skeletons/bookpageSkeleton';
+import AddRoomsRangeForm from './Components/AddRoomsRangeForm';
 const Admin = lazy(() => import('./Components/Admin'));
 const AddRoomTypeForm = lazy(() => import('./Components/AddRoomTypeForm'));
 
@@ -26,7 +27,7 @@ const AddRoomTypeForm = lazy(() => import('./Components/AddRoomTypeForm'));
 
 const AppLayout = () => {
     const location = useLocation();
-    const hideNavbarFooter = ["/login", "/admin", "/forgot-password", "/admin/addroomtype"].includes(location.pathname); // Check if we are on the login page
+    const hideNavbarFooter = ["/login", "/admin", "/forgot-password", "/admin/addroomtype", "/addroomrange"].includes(location.pathname); // Check if we are on the login page
 
     return (
         <>
@@ -68,6 +69,7 @@ const AppLayout = () => {
                 />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/admin/addroomtype" element={<AddRoomTypeForm />} />
+                <Route path="/addroomrange" element={<AddRoomsRangeForm />} />
                 <Route
                     path="/bookpage/:id"
                     element={

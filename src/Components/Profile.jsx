@@ -9,6 +9,9 @@ import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 // import { getAuth, signOut } from "firebase/auth";
 import ProfileSkeleton from "../Skeletons/profileSkeleton";
+import { jsPDF } from "jspdf";
+import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
 export default function Profile() {
     const token = localStorage.getItem("guestToken");
@@ -178,6 +181,135 @@ export default function Profile() {
             toast.error("Something went wrong.");
         }
     };
+    const loadRazorpayScript = () => {
+        return new Promise((resolve) => {
+            const script = document.createElement("script");
+            script.src = "https://checkout.razorpay.com/v1/checkout.js";
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+            document.body.appendChild(script);
+        });
+    };
+    const handlePayment = async (bookingId) => {
+        const res = await loadRazorpayScript();
+        if (!res) {
+            toast.error("Razorpay SDK failed to load. Are you online?");
+            return;
+        }
+        try {
+            const { data } = await axios.post(
+                `${import.meta.env.VITE_BACKEND_URL}/api/payment/create-order`,
+                { bookingId },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (!data.success) {
+                toast.error(data.message || "Failed to create order");
+                return;
+            }
+            const options = {
+                key: "rzp_test_SlblTgELqzKdN5",
+                amount: data.order.amount,
+                currency: "INR",
+                name: "Guest House Booking",
+                description: "Room Booking Payment",
+                order_id: data.order.id,
+                handler: async function (response) {
+                    try {
+                        const verifyRes = await axios.post(
+                            `${import.meta.env.VITE_BACKEND_URL}/api/payment/verify`,
+                            {
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                bookingId: bookingId
+                            },
+                            { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                        if (verifyRes.data.success) {
+                            toast.success("Payment Successful!");
+                            fetchUserBookings();
+                        } else {
+                            toast.error(verifyRes.data.message || "Payment verification failed");
+                        }
+                    } catch (error) {
+                        console.error(error);
+                        toast.error("Error verifying payment");
+                    }
+                },
+                prefill: {
+                    name: userData?.name || "",
+                    email: userData?.email || "",
+                    contact: userData?.phone || ""
+                },
+                theme: {
+                    color: "#3399cc"
+                }
+            };
+            const paymentObject = new window.Razorpay(options);
+            paymentObject.open();
+        } catch (error) {
+            console.error(error);
+            toast.error("Something went wrong with payment");
+        }
+    };
+    const generateInvoice = (booking) => {
+        const doc = new jsPDF();
+
+        // Header
+        doc.setFontSize(22);
+        doc.setTextColor(40);
+        doc.text("BIT Guest House", 14, 22);
+
+        doc.setFontSize(10);
+        doc.text("Invoice / Receipt", 14, 30);
+
+        // Guest Details
+        doc.setFontSize(12);
+        doc.text(`Name: ${userData?.name || ""}`, 14, 45);
+        doc.text(`Email: ${userData?.email || ""}`, 14, 52);
+        doc.text(`Phone: ${userData?.phone || ""}`, 14, 59);
+
+        // Calculate Days and Price Per Day
+        const checkIn = new Date(booking.checkInDate);
+        const checkOut = new Date(booking.checkOutDate);
+        const diffTime = Math.abs(checkOut - checkIn);
+        let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays === 0) diffDays = 1;
+        const pricePerDay = booking.amount / diffDays;
+
+        // Booking Info Table
+        autoTable(doc, {
+            startY: 65,
+            head: [['Room Type', 'Check-In', 'Check-Out', 'Nights', 'Price/Night', 'Total']],
+            body: [
+                [
+                    booking.room_type,
+                    checkIn.toLocaleDateString("en-GB"),
+                    checkOut.toLocaleDateString("en-GB"),
+                    diffDays,
+                    `Rs. ${pricePerDay}`,
+                    `Rs. ${booking.amount}`
+                ]
+            ],
+            theme: 'striped',
+            headStyles: { fillColor: [51, 153, 204] }
+        });
+
+        // Payment Info
+        const finalY = doc.lastAutoTable?.finalY || 85;
+        doc.setFontSize(12);
+        doc.text(`Payment Status: Paid`, 14, finalY + 15);
+        doc.setFontSize(14);
+        doc.text(`Amount Paid: Rs. ${booking.amount || "N/A"}`, 14, finalY + 25);
+
+        // Footer
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text("Thank you for booking with BIT Guest House!", 14, finalY + 45);
+
+        // Download
+        doc.save(`Invoice_${booking._id}.pdf`);
+    };
     const fetchUserBookings = async () => {
         try {
             const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/user/user/bookings`, {
@@ -292,14 +424,17 @@ export default function Profile() {
                                 <div className="flex flex-col">
                                     <label className="text-black mb-1">D.O.B</label>
                                     <DatePicker
-                                        selected={formData.dob}  // Ensure dob is a Date object
-                                        onChange={(date) => handleChange({ target: { name: "dob", value: date } })}
-                                        dateFormat="dd/MM/yyyy"  // Display format
-                                        showYearDropdown  // Enables year dropdown
-                                        scrollableYearDropdown  // Makes year selection scrollable
-                                        yearDropdownItemNumber={100}  // Show a wider range of years
-                                        showMonthDropdown  // Enables month selection dropdown
+                                        selected={formData.dob}
+                                        onChange={(date) =>
+                                            handleChange({ target: { name: "dob", value: date } })
+                                        }
+                                        dateFormat="dd/MM/yyyy"
+                                        showYearDropdown
+                                        scrollableYearDropdown
+                                        yearDropdownItemNumber={100}
+                                        showMonthDropdown
                                         popperPlacement="bottom-start"
+                                        maxDate={new Date()}          // Prevent future dates
                                         className="p-3 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-orange-400"
                                         placeholderText="Date of Birth"
                                     />
@@ -455,56 +590,91 @@ export default function Profile() {
                     <>
                         {/* Table Wrapper */}
                         <div className="bg-slate-200 p-2 md:p-4 shadow-lg rounded-lg w-full">
-                            {/* HEADER: Only visible on medium screens and up (mdl) */}
-                            <div className="hidden mdl:grid grid-cols-4 gap-4 text-gray-700 font-medium py-2 border-b border-gray-400">
-                                <span className="px-1">Room Type</span>
-                                <span className="px-1">Check-In Date</span>
-                                <span className="px-1">Check-Out Date</span>
-                                <span className="px-1">Status</span>
-                            </div>
+                            {bookings.length === 0 ? (
+                                <div className="flex justify-center items-center py-16">
+                                    <p className="text-gray-600 text-lg font-medium">
+                                        No past bookings found.
+                                    </p>
+                                </div>
 
-                            {/* Table Data: Maps over your bookings */}
-                            <div>
-                                {bookings.map((booking) => (
-                                    <div
-                                        key={booking._id}
-                                        className="border-b border-gray-300 p-3 text-sm mdl:grid mdl:grid-cols-4 mdl:gap-4 mdl:items-center mdl:p-2 mdl:border-b"
-                                    >
-                                        {/* Column 1: Room Type */}
-                                        <div className="flex justify-between items-center mdl:block">
-                                            <span className="font-medium text-gray-500 mdl:hidden">Room</span>
-                                            <span className="font-semibold text-gray-800">{booking.room_type}</span>
-                                        </div>
-
-                                        {/* Column 2: Check-In Date */}
-                                        <div className="flex justify-between items-center mt-1 mdl:mt-0 mdl:block">
-                                            <span className="font-medium text-gray-500 mdl:hidden">Check-In</span>
-                                            <span>{new Date(booking.checkInDate).toLocaleDateString("en-GB")}</span>
-                                        </div>
-
-                                        {/* Column 3: Check-Out Date */}
-                                        <div className="flex justify-between items-center mt-1 mdl:mt-0 mdl:block">
-                                            <span className="font-medium text-gray-500 mdl:hidden">Check-Out</span>
-                                            <span>{new Date(booking.checkOutDate).toLocaleDateString("en-GB")}</span>
-                                        </div>
-
-                                        {/* Column 4: Status */}
-                                        <div className="flex justify-between items-center mt-2 mdl:mt-0 mdl:block">
-                                            <span className="font-medium text-gray-500 mdl:hidden">Status</span>
-                                            <span
-                                                className={`px-3 py-1 font-semibold rounded-lg text-xs ${booking.status === "Approved"
-                                                    ? "text-green-700 bg-green-100"
-                                                    : booking.status === "Pending"
-                                                        ? "text-yellow-700 bg-yellow-100"
-                                                        : "text-red-700 bg-red-100"
-                                                    }`}
-                                            >
-                                                {booking.status}
-                                            </span>
-                                        </div>
+                            ) : (
+                                <>
+                                    {/* HEADER: Only visible on medium screens and up (mdl) */}
+                                    <div className="hidden mdl:grid grid-cols-5 gap-4 text-gray-700 font-medium py-2 border-b border-gray-400">
+                                        <span className="px-1">Room Type</span>
+                                        <span className="px-1">Check-In Date</span>
+                                        <span className="px-1">Check-Out Date</span>
+                                        <span className="px-1">Status</span>
+                                        <span className="px-1">Action</span>
                                     </div>
-                                ))}
-                            </div>
+
+                                    {/* Table Data: Maps over your bookings */}
+                                    <div>
+                                        {bookings.map((booking) => (
+                                            <div
+                                                key={booking._id}
+                                                className="border-b border-gray-300 p-3 text-sm mdl:grid mdl:grid-cols-5 mdl:gap-4 mdl:items-center mdl:p-2 mdl:border-b"
+                                            >
+                                                {/* Column 1: Room Type */}
+                                                <div className="flex justify-between items-center mdl:block">
+                                                    <span className="font-medium text-gray-500 mdl:hidden">Room</span>
+                                                    <span className="font-semibold text-gray-800">{booking.room_type}</span>
+                                                </div>
+
+                                                {/* Column 2: Check-In Date */}
+                                                <div className="flex justify-between items-center mt-1 mdl:mt-0 mdl:block">
+                                                    <span className="font-medium text-gray-500 mdl:hidden">Check-In</span>
+                                                    <span>{new Date(booking.checkInDate).toLocaleDateString("en-GB")}</span>
+                                                </div>
+
+                                                {/* Column 3: Check-Out Date */}
+                                                <div className="flex justify-between items-center mt-1 mdl:mt-0 mdl:block">
+                                                    <span className="font-medium text-gray-500 mdl:hidden">Check-Out</span>
+                                                    <span>{new Date(booking.checkOutDate).toLocaleDateString("en-GB")}</span>
+                                                </div>
+
+                                                {/* Column 4: Status */}
+                                                <div className="flex justify-between items-center mt-2 mdl:mt-0 mdl:block">
+                                                    <span className="font-medium text-gray-500 mdl:hidden">Status</span>
+                                                    <span
+                                                        className={`px-3 py-1 font-semibold rounded-lg text-xs ${booking.status === "Approved"
+                                                            ? "text-green-700 bg-green-100"
+                                                            : booking.status === "Pending"
+                                                                ? "text-yellow-700 bg-yellow-100"
+                                                                : "text-red-700 bg-red-100"
+                                                            }`}
+                                                    >
+                                                        {booking.status}
+                                                    </span>
+                                                </div>
+                                                {/* Column 5: Payment Action */}
+                                                <div className="flex justify-between items-center mt-2 mdl:mt-0 mdl:block">
+                                                    <span className="font-medium text-gray-500 mdl:hidden">Action</span>
+                                                    {booking.status === "Approved" && booking.paymentStatus !== "Paid" && (
+                                                        <button
+                                                            onClick={() => handlePayment(booking._id)}
+                                                            className="bg-blue-600 text-white text-xs px-3 py-1 rounded-md hover:bg-blue-700 transition"
+                                                        >
+                                                            Pay Now
+                                                        </button>
+                                                    )}
+                                                    {booking.paymentStatus === "Paid" && (
+                                                        <div className="flex flex-col gap-2">
+                                                            <span className="text-green-700 font-semibold text-xs">Paid</span>
+                                                            <button
+                                                                onClick={() => generateInvoice(booking)}
+                                                                className="bg-gray-800 text-white text-xs px-2 py-1 rounded-md hover:bg-gray-900 transition"
+                                                            >
+                                                                Download Invoice
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </>
                 )}

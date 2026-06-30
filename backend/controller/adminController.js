@@ -11,6 +11,8 @@ import roomTypeModel from '../models/roomTypeModel.js';
 import ComplaintModel from '../models/ComplaintModel.js';
 import nodemailer from 'nodemailer';
 
+// console.log("Collection:", Admin.collection.name);
+
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -82,7 +84,6 @@ const loginAdmin = async (req, res) => {
 };
 
 
-
 // Helper to upload buffer to Cloudinary
 const uploadToCloudinary = (buffer, folder) => {
   return new Promise((resolve, reject) => {
@@ -99,10 +100,10 @@ const uploadToCloudinary = (buffer, folder) => {
 
 const AddRoomsByRange = async (req, res) => {
   try {
-    const { type, startNumber, endNumber, capacity, status, price, description } = req.body;
+    const { type, startNumber, endNumber, capacity, status } = req.body;
 
-    if (!type || !startNumber || !endNumber || !price) {
-      return res.status(400).json({ error: 'type, startNumber, endNumber, and price are required' });
+    if (!type || !startNumber || !endNumber) {
+      return res.status(400).json({ error: 'type, startNumber, endNumber are required' });
     }
 
     if (endNumber < startNumber) {
@@ -110,19 +111,24 @@ const AddRoomsByRange = async (req, res) => {
     }
 
     // Upload images to Cloudinary
-    const imageUploadPromises = req.files.map(file =>
-      uploadToCloudinary(file.buffer, `guesthouse/roomTypes/${type}`)
-    );
-    const imageUrls = await Promise.all(imageUploadPromises);
+    // const imageUploadPromises = req.files.map(file =>
+    //   uploadToCloudinary(file.buffer, `guesthouse/roomTypes/${type}`)
+    // );
+    // const imageUrls = await Promise.all(imageUploadPromises);
 
     // Check and insert into roomTypeModel if not already exists
     const existingType = await roomTypeModel.findOne({ type });
+    // if (!existingType) {
+    //   await roomTypeModel.create({
+    //     type,
+    //     price,
+    //     description,
+    //     images: imageUrls
+    //   });
+    // }
     if (!existingType) {
-      await roomTypeModel.create({
-        type,
-        price,
-        description,
-        images: imageUrls
+      return res.status(400).json({
+        error: "Room type not found. Please create it first."
       });
     }
 
@@ -236,6 +242,8 @@ const BookingStatus = async (req, res) => {
       // Approve this booking
       booking.status = 'Approved';
       await booking.save();
+      room.status = "Booked";
+      await room.save();
 
       // Send approval email
       if (userEmail) {
@@ -502,7 +510,129 @@ export const getAllComplaints = async (req, res) => {
   }
 };
 
+export const getDailyDemand = async (req, res) => {
+  try {
+    // ✅ last 90 days range
+    const today = new Date();
+    const startDate = new Date();
+    startDate.setDate(today.getDate() - 90);
 
+    // normalize time
+    startDate.setHours(0, 0, 0, 0);
+    today.setHours(23, 59, 59, 999);
+
+    // ✅ fetch only relevant bookings
+    const bookings = await bookingModel.find({
+      status: "Approved",
+      checkInDate: { $lte: today },
+      checkOutDate: { $gte: startDate }
+    });
+
+    // ✅ demand map
+    const demandMap = {};
+
+    // initialize all dates with 0
+    let tempDate = new Date(startDate);
+    while (tempDate <= today) {
+      const key = tempDate.toISOString().split("T")[0];
+      demandMap[key] = 0;
+
+      tempDate.setDate(tempDate.getDate() + 1);
+    }
+
+    // ✅ fill demand
+    bookings.forEach((booking) => {
+      let current = new Date(booking.checkInDate);
+      const end = new Date(booking.checkOutDate);
+
+      // normalize
+      current.setHours(0, 0, 0, 0);
+      end.setHours(0, 0, 0, 0);
+
+      // inclusive loop (checkout INCLUDED as you decided)
+      while (current <= end) {
+        const key = current.toISOString().split("T")[0];
+
+        if (demandMap[key] !== undefined) {
+          demandMap[key] += 1;
+        }
+
+        current.setDate(current.getDate() + 1);
+      }
+    });
+
+    // ✅ convert to array (sorted)
+    const demandData = Object.keys(demandMap)
+      .sort()
+      .map(date => ({
+        date,
+        demand: demandMap[date]
+      }));
+
+    const featuredData = createFeatures(demandData);
+    const model = trainModel(featuredData);
+
+    const last = featuredData[featuredData.length - 1];
+    const forecast = forecastNextDays(model, last, 7);
+
+    res.json({ lastKnown: last, forecast });
+
+  } catch (error) {
+    console.error("Demand Error:", error);
+    res.status(500).json({ message: "Error fetching demand" });
+  }
+};
+
+import { createFeatures } from "../utils/featureEngineering.js";
+import { trainModel, forecastNextDays } from "../utils/trainModel.js";
+
+export const getMockDemand = async (req, res) => {
+  try {
+    const startDate = new Date("2026-01-01");
+    const today = new Date();
+
+    const days = Math.floor(
+      (today - startDate) / (1000 * 60 * 60 * 24)
+    );
+
+    const data = [];
+
+    for (let i = 0; i < days; i++) {
+      const current = new Date(startDate);
+      current.setDate(startDate.getDate() + i);
+
+      const day = current.getDay();
+
+      const trend = 2 + i * 0.03;
+      const weekendBoost = (day === 0 || day === 6) ? 3 : 0;
+      const spike = (i % 10 === 0) ? 5 : 0;
+
+      const noise = (i % 4) + (Math.random() * 0.3); // controlled noise
+
+      const demand = Math.max(
+        0,
+        Math.round(trend + weekendBoost + spike + noise)
+      );
+
+      data.push({
+        date: current.toISOString().split("T")[0],
+        demand
+      });
+    }
+
+    const featuredData = createFeatures(data);
+    const model = trainModel(featuredData);
+
+    const last = featuredData[featuredData.length - 1];
+    const forecast = forecastNextDays(model, last, 7);
+
+    res.json({ lastKnown: last, forecast });
+
+  } catch (error) {
+    console.error("ML Error:", error);
+    res.status(500).json({ message: "Error in forecasting" });
+  }
+};
 
 
 export { loginAdmin, AddRoomsByRange, BookingStatus, listRoomTypes, listBookedRoomsWithGuests, listBookingRequests }

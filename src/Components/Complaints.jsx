@@ -40,7 +40,7 @@ const Complaints = () => {
 
 
     return (
-        <div className="p-4 flex flex-col gap-4">
+        <div className="pb-4 flex flex-col gap-4">
             <div className="relative shadow-lg bg-slate-200 p-4 rounded-lg flex flex-col items-start md:items-center">
                 <h2 className="md:text-xl text-base font-bold text-center">Complaints</h2>
             </div>
